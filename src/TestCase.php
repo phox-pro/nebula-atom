@@ -9,6 +9,7 @@ class TestCase extends FrameworkTestCase
     protected function setUp(): void
     {
         init();
+        container()->reset();
         parent::setUp();
     }
 }

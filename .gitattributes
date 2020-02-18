@@ -1,0 +1,4 @@
+Tests/ export-ignore
+bitbucket-pipelines.yml export-ignore
+composer-dev.json export-ignore
+phpunit.xml export-ignore

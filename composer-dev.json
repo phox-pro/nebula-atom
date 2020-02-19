@@ -1,7 +1,8 @@
 {
     "autoload": {
         "psr-4": {
-            "Phox\\Nebula\\Atom\\": "src/"
+            "Phox\\Nebula\\Atom\\": "src/",
+            "Tests\\": "Tests/"
         },
         "files": [
             "src/Files/init.php",

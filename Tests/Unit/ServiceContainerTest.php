@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests\Unit;
+
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Implementation\ServiceContainer;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;

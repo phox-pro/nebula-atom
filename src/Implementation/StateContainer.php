@@ -2,12 +2,13 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
+use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\Exceptions\MustImplementInterface;
-use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
-use Phox\Nebula\Atom\Implementation\Exceptions\StateNotExists;
-use Phox\Nebula\Atom\Notion\Interfaces\IState;
+use Phox\Nebula\Atom\Implementation\Exceptions\MustExtends;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Nebula\Atom\Implementation\Exceptions\StateNotExists;
+use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
+use Phox\Nebula\Atom\Implementation\Exceptions\MustImplementInterface;
 
 class StateContainer implements IStateContainer 
 {
@@ -62,8 +63,8 @@ class StateContainer implements IStateContainer
 
     protected function addToAll(string $stateClass)
     {
-        if (!array_key_exists(IState::class, class_implements($stateClass))) {
-            error(MustImplementInterface::class, $stateClass, IState::class);
+        if (!is_subclass_of($stateClass, State::class)) {
+            error(MustExtends::class, $stateClass, State::class);
         }
         if ($this->all->has($stateClass)) {
             error(StateExistsException::class, $stateClass);

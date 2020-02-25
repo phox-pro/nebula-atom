@@ -2,16 +2,15 @@
 
 namespace Tests\Unit;
 
+use stdClass;
 use Exception;
 use Phox\Nebula\Atom\TestCase;
-use Phox\Nebula\Atom\Notion\Interfaces\IState;
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\Exceptions\MustImplementInterface;
-use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
-use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
-use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\Notion\Traits\TEvent;
-use stdClass;
+use Phox\Nebula\Atom\Notion\Abstracts\State;
+use Phox\Nebula\Atom\Implementation\Basics\Collection;
+use Phox\Nebula\Atom\Implementation\Exceptions\MustExtends;
+use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 
 class StatesTest extends TestCase 
 {
@@ -49,7 +48,7 @@ class StatesTest extends TestCase
      */
     public function addTest()
     {
-        $mockClass = $this->getMockClass(IState::class);
+        $mockClass = $this->getMockClass(State::class);
         $this->stateContainer->add($mockClass);
         $this->assertEquals([$mockClass], $this->stateContainer->getAll()->all());
         $this->assertEquals([$mockClass], $this->stateContainer->getRoot()->all());
@@ -61,7 +60,7 @@ class StatesTest extends TestCase
     public function badStateClass()
     {
         $mockClass = $this->getMockClass(stdClass::class);
-        $this->expectException(MustImplementInterface::class);
+        $this->expectException(MustExtends::class);
         $this->stateContainer->add($mockClass);
     }
 
@@ -70,7 +69,7 @@ class StatesTest extends TestCase
      */
     public function stateExistsError()
     {
-        $mockClass = $this->getMockClass(IState::class);
+        $mockClass = $this->getMockClass(State::class);
         $this->stateContainer->add($mockClass);
         $this->expectException(StateExistsException::class);
         $this->stateContainer->add($mockClass);
@@ -81,8 +80,8 @@ class StatesTest extends TestCase
      */
     public function addAfterTest()
     {
-        $mockClass = $this->getMockClass(IState::class);
-        $child = $this->getMockClass(IState::class, [], [], $mockClass . '_child');
+        $mockClass = $this->getMockClass(State::class);
+        $child = $this->getMockClass(State::class, [], [], $mockClass . '_child');
         $this->stateContainer->add($mockClass);
         $this->stateContainer->addAfter($child, $mockClass);
         $this->assertEquals([$mockClass], $this->stateContainer->getRoot()->all());
@@ -97,13 +96,8 @@ class StatesTest extends TestCase
      */
     public function statesAsEvents()
     {
-        $stateClass = get_class(new class implements IState { 
+        $stateClass = get_class(new class extends State { 
             use TEvent;
-
-            public function execute()
-            {
-                
-            }
         });
         $errorMessage = 'State can be used as Event';
         $stateClass::listen(fn () => error(Exception::class, $errorMessage));

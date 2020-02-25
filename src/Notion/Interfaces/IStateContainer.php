@@ -11,14 +11,14 @@ interface IStateContainer
     /**
      * Get all States
      *
-     * @return IState[]|Collection
+     * @return State[]|Collection
      */
     public function getAll() : Collection;
 
     /**
      * Get root States
      *
-     * @return IState[]|Collection
+     * @return State[]|Collection
      */
     public function getRoot() : Collection;
 
@@ -26,7 +26,7 @@ interface IStateContainer
      * Get state children
      *
      * @param string $parentClass
-     * @return IState[]|Collection
+     * @return State[]|Collection
      */
     public function getChildren(string $parentClass) : Collection;
 

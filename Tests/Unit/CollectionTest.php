@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use ArrayAccess;
 use Countable;
 use Iterator;
 use Phox\Nebula\Atom\Implementation\Basics\Collection;
@@ -18,7 +19,8 @@ class CollectionTest extends TestCase
     {
         foreach ([
             Iterator::class,
-            Countable::class
+            Countable::class,
+            ArrayAccess::class
         ] as $interface) {
             $this->assertTrue(is_subclass_of(Collection::class, $interface));
         }
@@ -156,6 +158,28 @@ class CollectionTest extends TestCase
         $collection = new Collection('integer');
         $collection->collect(1, 2, 3, 4);
         $this->assertEquals(2, $collection->search(3));
+    }
+
+    /**
+     * @test
+     */
+    public function hasMethodTest()
+    {
+        $collection = new Collection('integer');
+        $collection->collect(1, 2, 3);
+        $this->assertTrue($collection->has(2));
+        $this->assertFalse($collection->has(4));
+    }
+
+    /**
+     * @test
+     */
+    public function getTest()
+    {
+        $collection = new Collection('integer');
+        $collection->collect(1, 2, 3);
+        $this->assertEquals(2, $collection->get(1));
+        $this->assertEquals(3, $collection[2]); 
     }
 
     /**

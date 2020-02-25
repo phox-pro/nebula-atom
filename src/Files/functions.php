@@ -1,5 +1,6 @@
 <?php
 
+use Phox\Nebula\Atom\Implementation\Application;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 
 if (!function_exists('container')) {
@@ -67,5 +68,17 @@ if (!function_exists('error')) {
     function error(string $class, ...$params)
     {
         throw make($class, $params);
+    }
+}
+
+if (!function_exists('app')) {
+    /**
+     * Get Application instance
+     *
+     * @return Application
+     */
+    function app() : Application
+    {
+        return get(Application::class);
     }
 }

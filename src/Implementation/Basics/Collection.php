@@ -2,12 +2,13 @@
 
 namespace Phox\Nebula\Atom\Implementation\Basics;
 
+use ArrayAccess;
 use Countable;
 use Iterator;
 use Phox\Nebula\Atom\Implementation\Exceptions\BadCollectionType;
 use Phox\Nebula\Atom\Implementation\Exceptions\CollectionHasKey;
 
-class Collection implements Iterator, Countable
+class Collection implements Iterator, Countable, ArrayAccess
 {
     /**
      * Collection type
@@ -42,6 +43,17 @@ class Collection implements Iterator, Countable
 	public function all() : array
 	{
 		return $this->list;
+    }
+
+    /**
+     * Get value by index
+     *
+     * @param string|int $index
+     * @return void
+     */
+    public function get($index)
+    {
+        return $this[$index];
     }
 
     /**
@@ -206,6 +218,17 @@ class Collection implements Iterator, Countable
         return array_search($value, $this->list);
     }
 
+    /**
+     * Check is collection has value
+     *
+     * @param mixed $value
+     * @return boolean
+     */
+    public function has($value) : bool
+    {
+        return in_array($value, $this->list);
+    }
+
     public function count()
     {
         return count($this->list);
@@ -235,6 +258,26 @@ class Collection implements Iterator, Countable
     {
         $key = $this->key();
         return $key !== null && $key !== false;
+    }
+
+    public function offsetSet($offset, $value) {
+        if (is_null($offset)) {
+            $this->list[] = $value;
+        } else {
+            $this->list[$offset] = $value;
+        }
+    }
+
+    public function offsetExists($offset) {
+        return isset($this->list[$offset]);
+    }
+
+    public function offsetUnset($offset) {
+        unset($this->list[$offset]);
+    }
+
+    public function offsetGet($offset) {
+        return isset($this->list[$offset]) ? $this->list[$offset] : null;
     }
 
     private function check($item)

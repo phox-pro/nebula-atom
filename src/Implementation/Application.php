@@ -4,6 +4,7 @@ namespace Phox\Nebula\Atom\Implementation;
 
 use Phox\Nebula\Atom\Notion\Abstracts\Provider;
 use Phox\Nebula\Atom\Implementation\Basics\Collection;
+use Phox\Nebula\Atom\Implementation\States\ConsoleState;
 use Phox\Nebula\Atom\Implementation\States\DefineState;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
@@ -22,6 +23,7 @@ class Application
 	{
         $this->providers = new Collection(Provider::class);
         $this->currentState = make(DefineState::class);
+        get(IStateContainer::class)->add(DefineState::class);
     }
     
     /**
@@ -53,6 +55,18 @@ class Application
     public function run()
     {
        $this->enrichment(); 
+    }
+
+    /**
+     * Run Nebula application as CLI
+     *
+     * @return void
+     */
+    public function runConsole(array $argv)
+    {
+        get(IStateContainer::class)->addAfter(ConsoleState::class, DefineState::class);
+        container()->singleton(new Console($argv));
+        $this->enrichment();
     }
 
     protected function enrichment()

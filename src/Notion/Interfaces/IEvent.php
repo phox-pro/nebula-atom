@@ -2,6 +2,8 @@
 
 namespace Phox\Nebula\Atom\Notion\Interfaces;
 
+use Phox\Nebula\Atom\Implementation\Basics\Collection;
+
 interface IEvent 
 {
     /**
@@ -33,5 +35,5 @@ interface IEvent
      *
      * @return array
      */
-    public static function getListeners() : array;
+    public static function getListeners() : Collection;
 }

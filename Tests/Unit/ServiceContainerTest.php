@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use stdClass;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Implementation\ServiceContainer;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
@@ -16,8 +17,8 @@ class ServiceContainerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->fakeClass = $this->getMockClass(stdClass::class);
         parent::setUp();
+        $this->fakeClass = $this->getMockClass(stdClass::class);
     }
 
     /**

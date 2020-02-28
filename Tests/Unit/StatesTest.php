@@ -11,6 +11,7 @@ use Phox\Nebula\Atom\Implementation\Basics\Collection;
 use Phox\Nebula\Atom\Implementation\Exceptions\MustExtends;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
+use Phox\Nebula\Atom\Implementation\States\DefineState;
 
 class StatesTest extends TestCase 
 {
@@ -18,8 +19,8 @@ class StatesTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->stateContainer = get(IStateContainer::class);
         parent::setUp();
+        $this->stateContainer = get(IStateContainer::class);
     }
 
     /**
@@ -50,8 +51,8 @@ class StatesTest extends TestCase
     {
         $mockClass = $this->getMockClass(State::class);
         $this->stateContainer->add($mockClass);
-        $this->assertEquals([$mockClass], $this->stateContainer->getAll()->all());
-        $this->assertEquals([$mockClass], $this->stateContainer->getRoot()->all());
+        $this->assertEquals([DefineState::class, $mockClass], $this->stateContainer->getAll()->all());
+        $this->assertEquals([DefineState::class, $mockClass], $this->stateContainer->getRoot()->all());
     }
 
     /**
@@ -84,8 +85,8 @@ class StatesTest extends TestCase
         $child = $this->getMockClass(State::class, [], [], $mockClass . '_child');
         $this->stateContainer->add($mockClass);
         $this->stateContainer->addAfter($child, $mockClass);
-        $this->assertEquals([$mockClass], $this->stateContainer->getRoot()->all());
-        $this->assertEquals([$mockClass, $child], $this->stateContainer->getAll()->all());
+        $this->assertEquals([DefineState::class, $mockClass], $this->stateContainer->getRoot()->all());
+        $this->assertEquals([DefineState::class, $mockClass, $child], $this->stateContainer->getAll()->all());
         $children = $this->stateContainer->getChildren($mockClass);
         $this->assertInstanceOf(Collection::class, $children);
         $this->assertEquals([$child], $children->all());

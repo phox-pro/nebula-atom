@@ -2,17 +2,20 @@
 
 namespace Phox\Nebula\Atom\Notion\Traits;
 
+use Phox\Nebula\Atom\Implementation\Basics\Collection;
+
 trait TEvent 
 {
     /**
-     * @var callable[]
+     * @var callable[]|Collection
      */
-    protected static array $listeners = [];
+    protected static Collection $listeners;
 
     public static function listen(callable $listener)
     {
-        if (!in_array($listener, static::$listeners)) {
-            array_push(static::$listeners, $listener);
+        static::$listeners ??= new Collection('callable');
+        if (!static::$listeners->has($listener)) {
+            static::$listeners->add($listener);
         }
     }
 
@@ -23,13 +26,15 @@ trait TEvent
 
     public static function notifyRaw(array $params = [])
     {
+        static::$listeners ??= new Collection('callable');
         foreach (static::$listeners as $listener) {
             call($listener, $params);
         }
     }
 
-    public static function getListeners() : array
+    public static function getListeners() : Collection
     {
+        static::$listeners ??= new Collection('callable');
         return static::$listeners;
     }
 }

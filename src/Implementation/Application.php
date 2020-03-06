@@ -17,12 +17,9 @@ class Application
      */
     protected Collection $providers;
 
-    protected State $currentState;
-
 	public function __construct()
 	{
         $this->providers = new Collection(Provider::class);
-        $this->currentState = make(DefineState::class);
         get(IStateContainer::class)->add(DefineState::class);
     }
     
@@ -83,7 +80,6 @@ class Application
     protected function callState(string $stateClass)
     {
         $state = make($stateClass);
-        $this->currentState = $state;
         container()->singleton($state, State::class);
         if ($state instanceof IEvent) {
             $state::notify();

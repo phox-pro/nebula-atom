@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - uses: nanasess/setup-php@master
+      with:
+        php-version: '7.4'
+  
+    - uses: php-actions/phpunit@v1
+      with:
+        memory: 256M
+
+    - name: Validate composer.json and composer.lock
+      run: COMPOSER=composer-dev.json composer validate
+
+    - name: Install dependencies
+      run: COMPOSER=composer-dev.json composer install
+
+    - name: Run tests
+      run: vendor/bin/phpunit

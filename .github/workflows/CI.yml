@@ -18,16 +18,19 @@ jobs:
       with:
         php-version: '7.4'
   
-    - uses: php-actions/phpunit@v1
-      with:
-        config: phpunit.xml
-        memory: 256M
-
+    - name: Check PHP version
+      run: php -v
+  
     - name: Validate composer.json and composer.lock
       run: COMPOSER=composer-dev.json composer validate
 
     - name: Install dependencies
       run: COMPOSER=composer-dev.json composer install
+  
+    - uses: php-actions/phpunit@v1
+      with:
+        config: phpunit.xml
+        memory: 256M
 
     - name: Run tests
       run: vendor/bin/phpunit

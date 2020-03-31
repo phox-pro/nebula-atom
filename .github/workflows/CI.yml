@@ -20,6 +20,7 @@ jobs:
   
     - uses: php-actions/phpunit@v1
       with:
+        config: phpunit.xml
         memory: 256M
 
     - name: Validate composer.json and composer.lock

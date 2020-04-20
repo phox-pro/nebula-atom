@@ -2,8 +2,22 @@
     "name": "phox-pro/nebula-atom",
     "description": "Core library for Nebula framework",
     "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Phox\\Nebula\\Atom\\": "src/"
+        },
+        "files": [
+            "src/Files/init.php",
+            "src/Files/functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "Tests/"
+        }
+    },
     "require": {
-        "php": "^7.2"
+        "php": "^7.4"
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5"

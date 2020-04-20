@@ -200,7 +200,6 @@ class CollectionTest extends TestCase
     public function wrongTypeBasic()
     {
         $this->expectException(BadCollectionType::class);
-        $this->expectExceptionMessageRegExp("/^.+'integer'.+'string'.+$/u");
         (new Collection('integer'))->add('Test');
     }
 
@@ -210,7 +209,6 @@ class CollectionTest extends TestCase
     public function wrongTypeCallable()
     {
         $this->expectException(BadCollectionType::class);
-        $this->expectExceptionMessageRegExp("/^.+'callable'.+'integer'.+$/u");
         (new Collection('callable'))->add(123);
     }
 
@@ -220,7 +218,6 @@ class CollectionTest extends TestCase
     public function wrongTypeObject()
     {
         $this->expectException(BadCollectionType::class);
-        $this->expectExceptionMessageRegExp("/^.+'array'.+'stdClass'.+$/u");
         (new Collection('array'))->add(new \stdClass);
     }
 }

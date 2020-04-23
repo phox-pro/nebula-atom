@@ -77,6 +77,9 @@ class ServiceContainer implements IDependencyInjection
                 error(NonStaticCall::class, ...$struct);
             }
         }
+        if (is_object($struct)) {
+            $struct = [$struct, '__invoke'];
+        }
         $reflection = is_array($struct)
             ? new ReflectionMethod(...$struct)
             : new ReflectionFunction($struct);

@@ -139,4 +139,17 @@ class ServiceContainerTest extends TestCase
         $this->assertSame($mock, $container);
         $this->assertNotInstanceOf(ServiceContainer::class, $container);
     }
+
+    /**
+     * @test
+     */
+    public function callInvokeableObject()
+    {
+        $object = new class {
+            public function __invoke() {
+                return "Work!";
+            }
+        };
+        $this->assertEquals("Work!", call($object));
+    }
 }

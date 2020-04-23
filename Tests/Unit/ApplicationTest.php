@@ -31,7 +31,7 @@ class ApplicationTest extends TestCase
     {
         $providers = app()->getProviders();
         $this->assertInstanceOf(Collection::class, $providers);
-        $this->assertTrue($providers->empty());
+        $this->assertEquals(1, $providers->count());
         $provider = new class extends Provider {};
         app()->addProvider($provider);
         $this->assertArrayHasKey(get_class($provider), $providers);

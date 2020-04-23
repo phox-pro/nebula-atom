@@ -54,4 +54,11 @@ interface IStateContainer
      * @return void
      */
     public function addAfter(string $stateClass, string $parentClass);
+
+    /**
+     * Delete all listeners from states.
+     *
+     * @return void
+     */
+    public function clearListeners();
 }

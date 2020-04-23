@@ -42,6 +42,7 @@ class Application
     public function addProvider(Provider $provider)
     {
         $this->providers->set(get_class($provider), $provider);
+        !is_callable([$provider, 'define']) ?: call([$provider, 'define']);
     }
 
     /**
@@ -68,9 +69,6 @@ class Application
 
     protected function enrichment()
     {
-        foreach ($this->providers as $provider) {
-            !is_callable([$provider, 'define']) ?: call([$provider, 'define']);
-        }
         $root = get(IStateContainer::class)->getRoot();
         foreach ($root as $state) {
             $this->callState($state);

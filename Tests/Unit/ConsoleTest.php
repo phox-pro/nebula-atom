@@ -8,6 +8,7 @@ use Phox\Nebula\Atom\Implementation\Exceptions\ConsoleException;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\Implementation\States\ConsoleState;
+use Phox\Nebula\Atom\Implementation\States\DefineState;
 use Phox\Nebula\Atom\Notion\Abstracts\Provider;
 use Phox\Nebula\Atom\Notion\Interfaces\ICommand;
 use stdClass;
@@ -65,7 +66,11 @@ class ConsoleTest extends TestCase
         $mock->expects($this->once())->method('call');
         container()->singleton($mock, stdClass::class);
         $provider = new class extends Provider {
-            public function define(Console $console) {
+            public function define() {
+                DefineState::listen([$this, 'inDefineState']);
+            }
+
+            public function inDefineState(Console $console) {
                 $console->registerCommand(get_class(new class(new stdClass) implements ICommand {
                     public static string $module = 'atom';
                     public static string $command = 'unittestcommand';
@@ -95,7 +100,11 @@ class ConsoleTest extends TestCase
         $mock->testCase = $this;
         container()->singleton($mock, stdClass::class);
         $provider = new class extends Provider {
-            public function define(Console $console) {
+            public function define() {
+                DefineState::listen([$this, 'inDefineState']);  
+            }
+
+            public function inDefineState(Console $console) {
                 $console->registerCommand(get_class(new class(new stdClass) implements ICommand {
                     public static string $module = 'atom';
                     public static string $command = 'unittestcommand';

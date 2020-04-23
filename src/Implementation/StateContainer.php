@@ -61,6 +61,13 @@ class StateContainer implements IStateContainer
         $this->children->get($parentIndex)->add($stateClass);
     }
 
+    public function clearListeners()
+    {
+        foreach ($this->all as $state) {
+            $state::getListeners()->clear();
+        }
+    }
+
     protected function addToAll(string $stateClass)
     {
         if (!is_subclass_of($stateClass, State::class)) {

@@ -20,7 +20,6 @@ class Application
 	public function __construct()
 	{
         $this->providers = new Collection(Provider::class);
-        get(IStateContainer::class)->add(DefineState::class);
     }
     
     /**

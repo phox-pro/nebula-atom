@@ -2,6 +2,7 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
+use Closure;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionFunction;
@@ -76,6 +77,9 @@ class ServiceContainer implements IDependencyInjection
             if (!$reflectionClass->getMethod($struct[1])->isStatic()) {
                 error(NonStaticCall::class, ...$struct);
             }
+        }
+        if (is_object($struct) && !($struct instanceof Closure)) {
+            $struct = [$struct, '__invoke'];
         }
         $reflection = is_array($struct)
             ? new ReflectionMethod(...$struct)

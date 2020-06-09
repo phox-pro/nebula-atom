@@ -49,7 +49,7 @@ class Collection implements Iterator, Countable, ArrayAccess
      * Get value by index
      *
      * @param string|int $index
-     * @return void
+     * @return mixed
      */
     public function get($index)
     {

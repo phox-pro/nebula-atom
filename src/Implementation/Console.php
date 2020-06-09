@@ -20,11 +20,11 @@ class Console
 
     protected Collection $commands;
 
-	public function __construct(array $arguments)
+	public function __construct()
 	{
         $this->commands = new Collection(Collection::class);
         $this->options = new Collection('string');
-        $this->arguments = $arguments;
+        $this->arguments = $_SERVER['argv'];
     }
 
     /**
@@ -82,6 +82,17 @@ class Console
     public function getOptions() : Collection
     {
         return $this->options;
+    }
+
+    /**
+     * Force set argv to console (Default - $_SERVER['argv'])
+     *
+     * @param array $argv
+     * @return void
+     */
+    public function setArgv(array $argv)
+    {
+        $this->arguments = $argv;
     }
 
     /**

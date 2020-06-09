@@ -59,10 +59,9 @@ class Application
      *
      * @return void
      */
-    public function runConsole(array $argv)
+    public function runConsole()
     {
         get(IStateContainer::class)->addAfter(ConsoleState::class, DefineState::class);
-        container()->singleton(new Console($argv));
         $this->enrichment();
     }
 

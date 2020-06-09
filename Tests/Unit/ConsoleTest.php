@@ -34,7 +34,8 @@ class ConsoleTest extends TestCase
         $mock->expects($this->once())->method('run');
         ConsoleState::listen([$mock, 'run']);
         $this->expectException(ConsoleException::class);
-        app()->runConsole([]);
+        get(Console::class)->setArgv([]);
+        app()->runConsole();
     }
 
     /**
@@ -44,7 +45,8 @@ class ConsoleTest extends TestCase
     {
         $this->expectException(ConsoleException::class);
         $this->expectExceptionMessage('Atom command is required');
-        app()->runConsole(['file']);
+        get(Console::class)->setArgv(['file']);
+        app()->runConsole();
     }
 
     /**
@@ -54,7 +56,8 @@ class ConsoleTest extends TestCase
     {
         $this->expectException(ConsoleException::class);
         $this->expectExceptionMessage("Command must match '{module}::{command}' pattern, 'command' was given");
-        app()->runConsole(['file', 'command']);
+        get(Console::class)->setArgv(['file', 'command']);
+        app()->runConsole();
     }
 
     /**
@@ -88,7 +91,8 @@ class ConsoleTest extends TestCase
             }
         };
         app()->addProvider($provider);
-        app()->runConsole(['file', 'atom::unittestcommand']);
+        get(Console::class)->setArgv(['file', 'atom::unittestcommand']);
+        app()->runConsole();
     }
 
     /**
@@ -128,6 +132,7 @@ class ConsoleTest extends TestCase
             }
         };
         app()->addProvider($provider);
-        app()->runConsole(['file', 'atom::unittestcommand', '-q', 'string', '--qwerty', 'string with space', '--method1', '--method3']);
+        get(Console::class)->setArgv(['file', 'atom::unittestcommand', '-q', 'string', '--qwerty', 'string with space', '--method1', '--method3']);
+        app()->runConsole();
     }
 }

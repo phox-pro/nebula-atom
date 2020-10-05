@@ -7,11 +7,11 @@ interface IDependencyInjection
     /**
      * Add dependency injection as singleton
      *
-     * @param object $object Instance for registration
+     * @param object|string $object Instance or Class for registration
      * @param string|null $dependency Full name of dependency <class, interface>
      * @return void
      */
-    public function singleton(object $object, ?string $dependency = null);
+    public function singleton($object, ?string $dependency = null);
 
     /**
      * Add dependency injection as transient

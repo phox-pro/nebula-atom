@@ -26,7 +26,7 @@ class ServiceContainerTest extends TestCase
      */
     public function initDI()
     {
-        $this->assertTrue(function_exists('\Phox\Nebula\Atom\init'));
+        $this->assertTrue(function_exists('\Phox\Nebula\Atom\Files\init'));
         $this->assertTrue(function_exists('container'));
         $result = container();
         $this->assertInstanceOf(IDependencyInjection::class, $result);

@@ -60,13 +60,12 @@ class Collection implements Iterator, Countable, ArrayAccess
 	 * Add item to end of collection
 	 *
 	 * @param mixed $item
-	 * @return mixed
+	 * @return void
 	 */
 	public function add($item)
 	{
 		$this->check($item);
         array_push($this->list, $item);
-        return array_key_last($this->list);
     }
     
     /**

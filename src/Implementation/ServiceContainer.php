@@ -38,9 +38,9 @@ class ServiceContainer implements IDependencyInjection
         return $this;
     }
 
-    public function singleton(object $object, ?string $dependency = null)
+    public function singleton($object, ?string $dependency = null)
     {
-        $dependency ??= get_class($object);
+        $dependency ??= is_object($object) ? get_class($object) : $object;
         if (array_key_exists($dependency, $this->transients)) {
             error(AnotherInjectionExists::class, $dependency);
         }
@@ -90,7 +90,9 @@ class ServiceContainer implements IDependencyInjection
     public function get(string $class): ?object
     {
         if (array_key_exists($class, $this->singletons)) {
-            return $this->singletons[$class];
+            return is_object($this->singletons[$class])
+                ? $this->singletons[$class]
+                : ($this->singletons[$class] = make($this->singletons[$class]));
         } else if (array_key_exists($class, $this->transients)) {
             return $this->make($this->transients[$class]);
         }

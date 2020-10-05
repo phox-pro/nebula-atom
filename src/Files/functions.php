@@ -1,6 +1,7 @@
 <?php
 
 use Phox\Nebula\Atom\Implementation\Application;
+use Phox\Nebula\Atom\Implementation\ExceptionHandler;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 
 if (!function_exists('container')) {
@@ -80,5 +81,17 @@ if (!function_exists('app')) {
     function app() : Application
     {
         return get(Application::class);
+    }
+}
+
+if (!function_exists('exceptionHandler')) {
+    /**
+     * Get application exceptions handler
+     *
+     * @return ExceptionHandler
+     */
+    function exceptionHandler() : ExceptionHandler
+    {
+        return get(ExceptionHandler::class);
     }
 }

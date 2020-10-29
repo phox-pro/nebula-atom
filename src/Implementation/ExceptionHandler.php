@@ -14,28 +14,6 @@ class ExceptionHandler implements IEvent
 
     public function execute(Throwable $throwable)
     {
-        static::notifyRaw([$throwable], get_class($throwable));
-    }
-
-    public static function listen(callable $listener, string $exceptionClass = Exception::class)
-    {
-        static::initCollection($exceptionClass);
-        $exceptionListeners = static::$listeners->get($exceptionClass);
-        $exceptionListeners->has($listener) ?: $exceptionListeners->add($listener);
-    }
-
-    public static function notifyRaw(array $params = [], string $exceptionClass = Exception::class)
-    {
-        static::initCollection($exceptionClass);
-        $exceptionListeners = static::$listeners->get($exceptionClass);
-        foreach ($exceptionListeners as $exceptionListener) {
-            call($exceptionListener, $params);
-        }
-    }
-
-    protected static function initCollection(string $exceptionClass)
-    {
-        static::$listeners ??= new Collection(Collection::class);
-        static::$listeners->hasIndex($exceptionClass) ?: static::$listeners->set($exceptionClass, new Collection('callable'));
+        static::notify([$throwable], get_class($throwable));
     }
 }

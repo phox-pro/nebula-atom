@@ -54,7 +54,7 @@ class EventsTest extends TestCase
         $mockObject = $this->getMockBuilder(stdClass::class)->addMethods(['test'])->getMock();
         $mockObject->expects($this->once())->method('test');
         $mockClass::listen(fn ($testObject) => $testObject->test());
-        $mockClass::notify($mockObject);
+        $mockClass::notify([$mockObject]);
     }
 
     /**
@@ -68,7 +68,7 @@ class EventsTest extends TestCase
         $mockObject->expects($this->never())->method('test');
         $moreMock->expects($this->once())->method('test');
         $mockClass::listen(fn ($testObject, $moreObject) => $moreObject->test());
-        $mockClass::notifyRaw([
+        $mockClass::notify([
             'moreObject' => $moreMock
         ]);
     }

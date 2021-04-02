@@ -38,10 +38,10 @@ trait TEvent
         }
     }
 
-    public static function getListeners(?string $key = null) : Collection
+    public static function getListeners(?string $key = null): Collection
     {
         static::init($key);
-        
+
         return is_null($key)
             ? static::$listeners
             : static::$listeners->get($key);
@@ -54,5 +54,5 @@ trait TEvent
         static::$listeners ??= new Collection(Collection::class);
 
         static::$listeners->hasIndex($key) ?: static::$listeners->set($key, new Collection(Collection::TYPE_CALLABLE));
-    } 
+    }
 }

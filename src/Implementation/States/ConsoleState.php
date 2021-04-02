@@ -2,10 +2,10 @@
 
 namespace Phox\Nebula\Atom\Implementation\States;
 
+use Phox\Nebula\Atom\Notion\Traits\TEvent;
 use Phox\Nebula\Atom\Implementation\Console;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
-use Phox\Nebula\Atom\Notion\Traits\TEvent;
 
 class ConsoleState extends State implements IEvent
 {

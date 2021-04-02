@@ -4,7 +4,7 @@ namespace Phox\Nebula\Atom\Notion\Interfaces;
 
 use Phox\Nebula\Atom\Implementation\Basics\Collection;
 
-interface IEvent 
+interface IEvent
 {
     /**
      * Add listener to event
@@ -30,5 +30,5 @@ interface IEvent
      * @param string|null $key
      * @return Collection
      */
-    public static function getListeners(?string $key = null) : Collection;
+    public static function getListeners(?string $key = null): Collection;
 }

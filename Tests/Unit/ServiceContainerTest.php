@@ -18,6 +18,7 @@ class ServiceContainerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->fakeClass = $this->getMockClass(stdClass::class);
     }
 
@@ -28,7 +29,9 @@ class ServiceContainerTest extends TestCase
     {
         $this->assertTrue(function_exists('\Phox\Nebula\Atom\Files\init'));
         $this->assertTrue(function_exists('container'));
+        
         $result = container();
+        
         $this->assertInstanceOf(IDependencyInjection::class, $result);
     }
 
@@ -67,10 +70,13 @@ class ServiceContainerTest extends TestCase
     {
         $object = new stdClass;
         container()->singleton($object);
+        
         $this->assertSame($object, container()->get(stdClass::class));
         $this->assertNotSame($object, container()->make(stdClass::class));
+        
         container()->singleton($this->createMock(stdClass::class), stdClass::class);
         $singleton = container()->get(stdClass::class);
+        
         $this->assertNotSame($object, $singleton);
         $this->assertInstanceOf(stdClass::class, $singleton);
     }
@@ -81,11 +87,14 @@ class ServiceContainerTest extends TestCase
     public function transient()
     {
         container()->transient(stdClass::class, stdClass::class);
+        
         $this->assertEquals(new stdClass, container()->get(stdClass::class));
         $this->assertEquals(new stdClass, container()->make(stdClass::class));
+        
         $mockClass = $this->getMockClass(stdClass::class);
         container()->transient($mockClass, stdClass::class);
         $transient = container()->get(stdClass::class);
+        
         $this->assertNotEquals(new stdClass, $transient);
         $this->assertEquals(new $mockClass, $transient);
         $this->assertInstanceOf(stdClass::class, $transient);
@@ -96,20 +105,24 @@ class ServiceContainerTest extends TestCase
      */
     public function callCallback()
     {
-        $this->assertTrue(container()->call(fn() => true));
+        $this->assertTrue(container()->call(fn () => true));
         $this->assertInstanceOf(
             stdClass::class,
-            container()->call(fn(stdClass $obj) => $obj)
+            container()->call(fn (stdClass $obj) => $obj)
         );
+        
         $object = new stdClass;
+        
         $this->assertNotSame(
             $object,
-            container()->call(fn(stdClass $obj) => $obj)
+            container()->call(fn (stdClass $obj) => $obj)
         );
+        
         container()->singleton($object);
+        
         $this->assertSame(
             $object,
-            container()->call(fn(stdClass $obj) => $obj)
+            container()->call(fn (stdClass $obj) => $obj)
         );
     }
 
@@ -120,12 +133,14 @@ class ServiceContainerTest extends TestCase
     {
         $this->assertEquals(
             'default',
-            container()->call(fn(string $some = 'default') => $some)
+            container()->call(fn (string $some = 'default') => $some)
         );
-        $this->assertNull(container()->call(fn(?string $some) => $some));
-        $this->assertNull(container()->call(fn($some) => $some));
+
+        $this->assertNull(container()->call(fn (?string $some) => $some));
+        $this->assertNull(container()->call(fn ($some) => $some));
         $this->expectException(BadParamsToDependencyInjection::class);
-        container()->call(fn(string $some) => $some);
+        
+        container()->call(fn (string $some) => $some);
     }
 
     /**
@@ -136,6 +151,7 @@ class ServiceContainerTest extends TestCase
         $mock = $this->getMockBuilder(IDependencyInjection::class)->getMock();
         container()->singleton($mock, IDependencyInjection::class);
         $container = container()->get(IDependencyInjection::class);
+        
         $this->assertSame($mock, $container);
         $this->assertNotInstanceOf(ServiceContainer::class, $container);
     }
@@ -145,11 +161,14 @@ class ServiceContainerTest extends TestCase
      */
     public function callInvokeableObject()
     {
-        $object = new class {
-            public function __invoke() {
+        $object = new class
+        {
+            public function __invoke()
+            {
                 return "Work!";
             }
         };
+        
         $this->assertEquals("Work!", call($object));
     }
 }

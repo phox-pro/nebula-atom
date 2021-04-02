@@ -2,24 +2,25 @@
 
 namespace Tests\Unit;
 
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\Console;
-use Phox\Nebula\Atom\Implementation\Exceptions\ConsoleException;
+use stdClass;
 use Phox\Nebula\Atom\TestCase;
-use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
-use Phox\Nebula\Atom\Implementation\States\ConsoleState;
-use Phox\Nebula\Atom\Implementation\States\DefineState;
+use Phox\Nebula\Atom\Implementation\Console;
 use Phox\Nebula\Atom\Notion\Abstracts\Provider;
 use Phox\Nebula\Atom\Notion\Interfaces\ICommand;
-use stdClass;
+use Phox\Nebula\Atom\Implementation\Basics\Collection;
+use Phox\Nebula\Atom\Implementation\States\DefineState;
+use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Nebula\Atom\Implementation\States\ConsoleState;
+use Phox\Nebula\Atom\Implementation\Exceptions\ConsoleException;
 
-class ConsoleTest extends TestCase 
+class ConsoleTest extends TestCase
 {
     protected IStateContainer $stateContainer;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->stateContainer = get(IStateContainer::class);
         ConsoleState::getListeners()->clear();
     }
@@ -29,11 +30,14 @@ class ConsoleTest extends TestCase
      */
     public function consoleStateTest()
     {
-        $this->assertFalse($this->stateContainer->getAll()->has(ConsoleState::class));
         $mock = $this->getMockBuilder(stdClass::class)->addMethods(['run'])->getMock();
         $mock->expects($this->once())->method('run');
+
+        $this->assertFalse($this->stateContainer->getAll()->has(ConsoleState::class));
+
         ConsoleState::listen([$mock, 'run']);
         $this->expectException(ConsoleException::class);
+
         get(Console::class)->setArgv([]);
         app()->runConsole();
     }
@@ -45,6 +49,7 @@ class ConsoleTest extends TestCase
     {
         $this->expectException(ConsoleException::class);
         $this->expectExceptionMessage('Atom command is required');
+
         get(Console::class)->setArgv(['file']);
         app()->runConsole();
     }
@@ -56,6 +61,7 @@ class ConsoleTest extends TestCase
     {
         $this->expectException(ConsoleException::class);
         $this->expectExceptionMessage("Command must match '{module}::{command}' pattern, 'command' was given");
+
         get(Console::class)->setArgv(['file', 'command']);
         app()->runConsole();
     }
@@ -67,29 +73,37 @@ class ConsoleTest extends TestCase
     {
         $mock = $this->getMockBuilder(stdClass::class)->addMethods(['call'])->getMock();
         $mock->expects($this->once())->method('call');
+
         container()->singleton($mock, stdClass::class);
-        $provider = new class extends Provider {
-            public function define() {
+        $provider = new class extends Provider
+        {
+            public function define()
+            {
                 DefineState::listen([$this, 'inDefineState']);
             }
 
-            public function inDefineState(Console $console) {
-                $console->registerCommand(get_class(new class(new stdClass) implements ICommand {
+            public function inDefineState(Console $console)
+            {
+                $console->registerCommand(get_class(new class(new stdClass) implements ICommand
+                {
                     public static string $module = 'atom';
                     public static string $command = 'unittestcommand';
 
                     private stdClass $mock;
-                    
-                    public function __construct(stdClass $mock) {
+
+                    public function __construct(stdClass $mock)
+                    {
                         $this->mock = $mock;
                     }
 
-                    public function run() {
+                    public function run()
+                    {
                         call([$this->mock, 'call']);
                     }
                 }));
             }
         };
+
         app()->addProvider($provider);
         get(Console::class)->setArgv(['file', 'atom::unittestcommand']);
         app()->runConsole();
@@ -102,25 +116,33 @@ class ConsoleTest extends TestCase
     {
         $mock = $this->getMockBuilder(stdClass::class)->getMock();
         $mock->testCase = $this;
+
         container()->singleton($mock, stdClass::class);
-        $provider = new class extends Provider {
-            public function define() {
-                DefineState::listen([$this, 'inDefineState']);  
+        $provider = new class extends Provider
+        {
+            public function define()
+            {
+                DefineState::listen([$this, 'inDefineState']);
             }
 
-            public function inDefineState(Console $console) {
-                $console->registerCommand(get_class(new class(new stdClass) implements ICommand {
+            public function inDefineState(Console $console)
+            {
+                $console->registerCommand(get_class(new class(new stdClass) implements ICommand
+                {
                     public static string $module = 'atom';
                     public static string $command = 'unittestcommand';
 
                     private stdClass $mock;
-                    
-                    public function __construct(stdClass $mock) {
+
+                    public function __construct(stdClass $mock)
+                    {
                         $this->mock = $mock;
                     }
 
-                    public function run() {
+                    public function run()
+                    {
                         $console = get(Console::class);
+
                         $this->mock->testCase->assertTrue($console->hasOption('method1') && $console->option('method1') == true && $console->option('method1') === '1');
                         $this->mock->testCase->assertTrue($console->hasOption('method3'));
                         $this->mock->testCase->assertFalse($console->hasOption('method2'));
@@ -131,6 +153,7 @@ class ConsoleTest extends TestCase
                 }));
             }
         };
+        
         app()->addProvider($provider);
         get(Console::class)->setArgv(['file', 'atom::unittestcommand', '-q', 'string', '--qwerty', 'string with space', '--method1', '--method3']);
         app()->runConsole();

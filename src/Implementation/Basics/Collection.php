@@ -2,47 +2,44 @@
 
 namespace Phox\Nebula\Atom\Implementation\Basics;
 
-use ArrayAccess;
-use Countable;
 use Iterator;
-use Phox\Nebula\Atom\Implementation\Exceptions\BadCollectionType;
+use Countable;
+use ArrayAccess;
 use Phox\Nebula\Atom\Implementation\Exceptions\CollectionHasKey;
+use Phox\Nebula\Atom\Implementation\Exceptions\BadCollectionType;
 
 class Collection implements Iterator, Countable, ArrayAccess
 {
-    /**
-     * Collection type
-     */
-    protected string $type;
+    public const TYPE_CALLABLE = 'callable';
 
     /**
      * List of collection items
      */
     protected array $list = [];
 
-    public function __construct(string $type)
+    public function __construct(
+        protected string $type
+    ) {
+    }
+
+    /**
+     * Get collection type
+     *
+     * @return string
+     */
+    public function getType(): string
     {
-        $this->type = $type;
+        return $this->type;
     }
 
     /**
-	 * Get collection type
-	 *
-	 * @return string
-	 */
-	public function getType() : string
-	{
-		return $this->type;
-    }
-
-    /**
-	 * Get collection items as array
-	 *
-	 * @return array
-	 */
-	public function all() : array
-	{
-		return $this->list;
+     * Get collection items as array
+     *
+     * @return array
+     */
+    public function all(): array
+    {
+        return $this->list;
     }
 
     /**
@@ -57,65 +54,65 @@ class Collection implements Iterator, Countable, ArrayAccess
     }
 
     /**
-	 * Add item to end of collection
-	 *
-	 * @param mixed $item
-	 * @return void
-	 */
-	public function add($item)
-	{
-		$this->check($item);
+     * Add item to end of collection
+     *
+     * @param mixed $item
+     * @return void
+     */
+    public function add($item)
+    {
+        $this->check($item);
         array_push($this->list, $item);
     }
-    
+
     /**
-	 * Set item by key.
-	 *
-	 * @param mixed $key Key for item which not exists in collection
-	 * @param mixed $item Item
-	 * @return void
-	 */
-	public function set($key, $item)
-	{
-		if (array_key_exists($key, $this->list)) {
+     * Set item by key.
+     *
+     * @param mixed $key Key for item which not exists in collection
+     * @param mixed $item Item
+     * @return void
+     */
+    public function set($key, $item)
+    {
+        if (array_key_exists($key, $this->list)) {
             error(CollectionHasKey::class, $key);
-		}
-		$this->replace($key, $item);
-    }
-    
-    /**
-	 * Force set item by key
-	 *
-	 * @param mixed $key Key
-	 * @param mixed $item Item
-	 * @return void
-	 */
-	public function replace($key, $item)
-	{
-		$this->check($item);
-		$this->list[$key] = $item;
+        }
+        $this->replace($key, $item);
     }
 
     /**
-	 * Get first collection item
-	 *
-	 * @return mixed
-	 */
-	public function first()
-	{
-		return reset($this->list) ?: null;
+     * Force set item by key
+     *
+     * @param mixed $key Key
+     * @param mixed $item Item
+     * @return void
+     */
+    public function replace($key, $item)
+    {
+        $this->check($item);
+        $this->list[$key] = $item;
     }
 
     /**
-	 * Delete item from collection by key
-	 *
-	 * @param mixed $index
-	 * @return void
-	 */
-	public function deleteByIndex($index)
-	{
-		if ($this->hasIndex($index)) {
-			unset($this->list[$index]);
+     * Get first collection item
+     *
+     * @return mixed
+     */
+    public function first()
+    {
+        return reset($this->list) ?: null;
+    }
+
+    /**
+     * Delete item from collection by key
+     *
+     * @param mixed $index
+     * @return void
+     */
+    public function deleteByIndex($index)
+    {
+        if ($this->hasIndex($index)) {
+            unset($this->list[$index]);
         }
     }
 
@@ -170,9 +167,9 @@ class Collection implements Iterator, Countable, ArrayAccess
      *
      * @return boolean
      */
-	public function empty() : bool
-	{
-		return empty($this->list);
+    public function empty(): bool
+    {
+        return empty($this->list);
     }
 
     /**
@@ -186,22 +183,22 @@ class Collection implements Iterator, Countable, ArrayAccess
     }
 
     /**
-	 * Check is key exists in collection
-	 *
-	 * @param mixed $index Key value
-	 * @return boolean
-	 */
-	public function hasIndex($index) : bool
-	{
-		return array_key_exists($index, $this->list);
+     * Check is key exists in collection
+     *
+     * @param mixed $index Key value
+     * @return boolean
+     */
+    public function hasIndex($index): bool
+    {
+        return array_key_exists($index, $this->list);
     }
-    
+
     /**
      * Get all keys in collection
      *
      * @return array
      */
-    public function keys() : array
+    public function keys(): array
     {
         return array_keys($this->list);
     }
@@ -223,7 +220,7 @@ class Collection implements Iterator, Countable, ArrayAccess
      * @param mixed $value
      * @return boolean
      */
-    public function has($value) : bool
+    public function has($value): bool
     {
         return in_array($value, $this->list);
     }
@@ -256,10 +253,12 @@ class Collection implements Iterator, Countable, ArrayAccess
     public function valid()
     {
         $key = $this->key();
+        
         return $key !== null && $key !== false;
     }
 
-    public function offsetSet($offset, $value) {
+    public function offsetSet($offset, $value)
+    {
         if (is_null($offset)) {
             $this->list[] = $value;
         } else {
@@ -267,26 +266,29 @@ class Collection implements Iterator, Countable, ArrayAccess
         }
     }
 
-    public function offsetExists($offset) {
+    public function offsetExists($offset)
+    {
         return isset($this->list[$offset]);
     }
 
-    public function offsetUnset($offset) {
+    public function offsetUnset($offset)
+    {
         unset($this->list[$offset]);
     }
 
-    public function offsetGet($offset) {
+    public function offsetGet($offset)
+    {
         return isset($this->list[$offset]) ? $this->list[$offset] : null;
     }
 
     private function check($item)
-	{
-		if ($this->type == 'callable') {
+    {
+        if ($this->type == self::TYPE_CALLABLE) {
             is_callable($item) ?: error(BadCollectionType::class, $this, is_object($item) ? get_class($item) : gettype($item));
-		} elseif (is_object($item)) {
-			is_a($item, $this->type) ?: error(BadCollectionType::class, $this, get_class($item));
-		} else {
-			(($actualType = gettype($item)) == $this->type) ?: error(BadCollectionType::class, $this, $actualType);
+        } elseif (is_object($item)) {
+            is_a($item, $this->type) ?: error(BadCollectionType::class, $this, get_class($item));
+        } else {
+            (($actualType = gettype($item)) == $this->type) ?: error(BadCollectionType::class, $this, $actualType);
         }
-	}
+    }
 }

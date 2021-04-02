@@ -10,7 +10,7 @@ if (!function_exists('container')) {
      *
      * @return IDependencyInjection
      */
-    function container() : IDependencyInjection
+    function container(): IDependencyInjection
     {
         return $GLOBALS['dependencyInjection'];
     }
@@ -24,7 +24,8 @@ if (!function_exists('make')) {
      * @param array $params Params to set in object constructor
      * @return object
      */
-    function make(string $class, array $params = []) : object {
+    function make(string $class, array $params = []): object
+    {
         return container()->make($class, $params);
     }
 }
@@ -50,7 +51,7 @@ if (!function_exists('get')) {
      * @param string $class Class name
      * @return object|null
      */
-    function get(string $class) : ?object
+    function get(string $class): ?object
     {
         return container()->get($class);
     }
@@ -78,7 +79,7 @@ if (!function_exists('app')) {
      *
      * @return Application
      */
-    function app() : Application
+    function app(): Application
     {
         return get(Application::class);
     }
@@ -90,7 +91,7 @@ if (!function_exists('exceptionHandler')) {
      *
      * @return ExceptionHandler
      */
-    function exceptionHandler() : ExceptionHandler
+    function exceptionHandler(): ExceptionHandler
     {
         return get(ExceptionHandler::class);
     }

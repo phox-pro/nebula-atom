@@ -2,7 +2,7 @@
 
 namespace Phox\Nebula\Atom\Notion\Abstracts;
 
-abstract class Provider 
+abstract class Provider
 {
     //
 }

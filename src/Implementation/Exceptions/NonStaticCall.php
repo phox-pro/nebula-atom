@@ -7,7 +7,7 @@ use Exception;
 /**
  * Throws after trying to call non-static method as static
  */
-class NonStaticCall extends Exception 
+class NonStaticCall extends Exception
 {
     public function __construct(string $class, string $method)
     {

@@ -4,7 +4,7 @@ namespace Phox\Nebula\Atom\Implementation\Exceptions;
 
 use Exception;
 
-class MustExtends extends Exception 
+class MustExtends extends Exception
 {
     public function __construct(string $class, string $parent)
     {

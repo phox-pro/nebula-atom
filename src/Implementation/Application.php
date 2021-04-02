@@ -2,32 +2,32 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
-use Phox\Nebula\Atom\Notion\Abstracts\Provider;
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\States\ConsoleState;
-use Phox\Nebula\Atom\Implementation\States\DefineState;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
+use Phox\Nebula\Atom\Notion\Abstracts\Provider;
+use Phox\Nebula\Atom\Implementation\Basics\Collection;
+use Phox\Nebula\Atom\Implementation\States\DefineState;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Nebula\Atom\Implementation\States\ConsoleState;
 
-class Application 
+class Application
 {
     /**
      * Providers collection
      */
     protected Collection $providers;
 
-	public function __construct()
-	{
+    public function __construct()
+    {
         $this->providers = new Collection(Provider::class);
     }
-    
+
     /**
      * Get all application providers
      *
      * @return Provider[]|Collection
      */
-    public function getProviders() : Collection
+    public function getProviders(): Collection
     {
         return $this->providers;
     }
@@ -51,7 +51,7 @@ class Application
      */
     public function run()
     {
-       $this->enrichment(); 
+        $this->enrichment();
     }
 
     /**
@@ -68,6 +68,7 @@ class Application
     protected function enrichment()
     {
         $root = get(IStateContainer::class)->getRoot();
+
         foreach ($root as $state) {
             $this->callState($state);
         }
@@ -77,10 +78,13 @@ class Application
     {
         $state = make($stateClass);
         container()->singleton($state, State::class);
+
         if ($state instanceof IEvent) {
             $state::notify();
         }
+
         !is_callable([$state, 'execute']) ?: call([$state, 'execute']);
+        
         $children = get(IStateContainer::class)->getChildren($stateClass);
         foreach ($children as $child) {
             $this->callState($child);

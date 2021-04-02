@@ -4,13 +4,12 @@ namespace Phox\Nebula\Atom\Implementation;
 
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\Exceptions\MustExtends;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Nebula\Atom\Implementation\Exceptions\MustExtends;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateNotExists;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
-use Phox\Nebula\Atom\Implementation\Exceptions\MustImplementInterface;
 
-class StateContainer implements IStateContainer 
+class StateContainer implements IStateContainer
 {
     protected Collection $root;
 
@@ -53,10 +52,13 @@ class StateContainer implements IStateContainer
     public function addAfter(string $stateClass, string $parentClass)
     {
         $parentIndex = $this->all->search($parentClass);
+
         if ($parentIndex === false) {
             error(StateNotExists::class, $parentClass);
         }
+
         $this->addToAll($stateClass);
+        
         $this->children->hasIndex($parentIndex) ?: $this->children->set($parentIndex, new Collection('string'));
         $this->children->get($parentIndex)->add($stateClass);
     }
@@ -73,9 +75,11 @@ class StateContainer implements IStateContainer
         if (!is_subclass_of($stateClass, State::class)) {
             error(MustExtends::class, $stateClass, State::class);
         }
+
         if ($this->all->has($stateClass)) {
             error(StateExistsException::class, $stateClass);
         }
+        
         $this->all->add($stateClass);
     }
 }

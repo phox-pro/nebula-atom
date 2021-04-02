@@ -209,7 +209,7 @@ class CollectionTest extends TestCase
     public function wrongTypeCallable()
     {
         $this->expectException(BadCollectionType::class);
-        (new Collection('callable'))->add(123);
+        (new Collection(Collection::TYPE_CALLABLE))->add(123);
     }
 
     /**

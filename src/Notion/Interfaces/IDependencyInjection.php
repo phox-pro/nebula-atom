@@ -2,7 +2,7 @@
 
 namespace Phox\Nebula\Atom\Notion\Interfaces;
 
-interface IDependencyInjection 
+interface IDependencyInjection
 {
     /**
      * Add dependency injection as singleton
@@ -29,7 +29,7 @@ interface IDependencyInjection
      * @param array $params Params to set in object constructor
      * @return object
      */
-    public function make(string $class, array $params = []) : object;
+    public function make(string $class, array $params = []): object;
 
     /**
      * Call structure with injections
@@ -46,12 +46,12 @@ interface IDependencyInjection
      * @param string $class Class name
      * @return object|null
      */
-    public function get(string $class) : ?object;
+    public function get(string $class): ?object;
 
     /**
      * Reset all instances rules
      *
      * @return IDependencyInjection
      */
-    public function reset() : IDependencyInjection;
+    public function reset(): IDependencyInjection;
 }

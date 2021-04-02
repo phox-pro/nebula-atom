@@ -4,7 +4,7 @@ namespace Phox\Nebula\Atom\Implementation\Exceptions;
 
 use Exception;
 
-class ConsoleException extends Exception 
+class ConsoleException extends Exception
 {
     public function __construct(string $message)
     {

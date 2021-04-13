@@ -36,12 +36,12 @@ class Console
     {
         $this->prepare();
         if (!$this->commands->hasIndex($this->module)) {
-            error(ConsoleException::class, "Module '{$this->module}' does not contain a commands");
+            throw new ConsoleException("Module '{$this->module}' does not contain a commands");
         }
 
         $moduleCommands = $this->commands->get($this->module);
         if (!$moduleCommands->hasIndex($this->command)) {
-            error(ConsoleException::class, "Module '{$this->module}' does not contain '{$this->command}' command");
+            throw new ConsoleException("Module '{$this->module}' does not contain '{$this->command}' command");
         }
 
         $command = $moduleCommands->get($this->command);
@@ -116,22 +116,22 @@ class Console
         $moduleCommands = $this->commands->get($module);
 
         $moduleCommands->hasIndex($command)
-            ? error(ConsoleException::class, "Command '{$command}' already exists in module '{$module}'")
+            ? throw new ConsoleException("Command '{$command}' already exists in module '{$module}'")
             : $moduleCommands->set($command, make($commandClass));
     }
 
     protected function prepare()
     {
-        !empty($this->arguments) ?: error(ConsoleException::class, 'Bad arguments');
+        !empty($this->arguments) ?: throw new ConsoleException('Bad arguments');
 
         $arguments = $this->arguments;
         $this->caller = $arguments[0];
 
         unset($arguments[0]);
-        array_key_exists(1, $arguments) ?: error(ConsoleException::class, 'Atom command is required');
+        array_key_exists(1, $arguments) ?: throw new ConsoleException('Atom command is required');
 
         $command = array_shift($arguments);
-        preg_match('/([\w\d]+)::([\w\d]+)/i', $command, $matches) ?: error(ConsoleException::class, "Command must match '{module}::{command}' pattern, '{$command}' was given");
+        preg_match('/([\w\d]+)::([\w\d]+)/i', $command, $matches) ?: throw new ConsoleException("Command must match '{module}::{command}' pattern, '{$command}' was given");
         $this->module = $matches[1];
         $this->command = $matches[2];
 

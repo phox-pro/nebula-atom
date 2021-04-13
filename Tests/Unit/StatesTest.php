@@ -111,7 +111,7 @@ class StatesTest extends TestCase
             use TEvent;
         });
         $errorMessage = 'State can be used as Event';
-        $stateClass::listen(fn () => error(Exception::class, $errorMessage));
+        $stateClass::listen(fn () => throw new Exception($errorMessage));
         
         $this->expectExceptionMessage($errorMessage);
         

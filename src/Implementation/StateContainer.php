@@ -54,7 +54,7 @@ class StateContainer implements IStateContainer
         $parentIndex = $this->all->search($parentClass);
 
         if ($parentIndex === false) {
-            error(StateNotExists::class, $parentClass);
+            throw new StateNotExists($parentClass);
         }
 
         $this->addToAll($stateClass);
@@ -73,11 +73,11 @@ class StateContainer implements IStateContainer
     protected function addToAll(string $stateClass)
     {
         if (!is_subclass_of($stateClass, State::class)) {
-            error(MustExtends::class, $stateClass, State::class);
+            throw new MustExtends($stateClass, State::class);
         }
 
         if ($this->all->has($stateClass)) {
-            error(StateExistsException::class, $stateClass);
+            throw new StateExistsException($stateClass);
         }
         
         $this->all->add($stateClass);

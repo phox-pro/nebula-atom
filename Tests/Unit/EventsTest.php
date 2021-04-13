@@ -52,7 +52,7 @@ class EventsTest extends TestCase
         {
         });
 
-        $listener = fn () => error($exceptionClass);
+        $listener = fn () => throw make($exceptionClass);
         $mockClass::listen($listener);
         $this->expectException($exceptionClass);
         $mockClass::notify();

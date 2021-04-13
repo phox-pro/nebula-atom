@@ -75,8 +75,9 @@ class Collection implements Iterator, Countable, ArrayAccess
     public function set($key, $item)
     {
         if (array_key_exists($key, $this->list)) {
-            error(CollectionHasKey::class, $key);
+            throw new CollectionHasKey($key);
         }
+
         $this->replace($key, $item);
     }
 
@@ -284,11 +285,11 @@ class Collection implements Iterator, Countable, ArrayAccess
     private function check($item)
     {
         if ($this->type == self::TYPE_CALLABLE) {
-            is_callable($item) ?: error(BadCollectionType::class, $this, is_object($item) ? get_class($item) : gettype($item));
+            is_callable($item) ?: throw new BadCollectionType($this, is_object($item) ? get_class($item) : gettype($item));
         } elseif (is_object($item)) {
-            is_a($item, $this->type) ?: error(BadCollectionType::class, $this, get_class($item));
+            is_a($item, $this->type) ?: throw new BadCollectionType($this, get_class($item));
         } else {
-            (($actualType = gettype($item)) == $this->type) ?: error(BadCollectionType::class, $this, $actualType);
+            (($actualType = gettype($item)) == $this->type) ?: throw new BadCollectionType($this, $actualType);
         }
     }
 }

@@ -47,7 +47,7 @@ class ServiceContainer implements IDependencyInjection
         $dependency ??= is_object($object) ? get_class($object) : $object;
 
         if (array_key_exists($dependency, $this->transients)) {
-            error(AnotherInjectionExists::class, $dependency);
+            throw new AnotherInjectionExists($dependency);
         }
 
         $this->singletons[$dependency] = $object;
@@ -58,7 +58,7 @@ class ServiceContainer implements IDependencyInjection
         $dependency ??= $class;
 
         if (array_key_exists($dependency, $this->singletons)) {
-            error(AnotherInjectionExists::class, $dependency);
+            throw new AnotherInjectionExists($dependency);
         }
 
         $this->transients[$dependency] = $class;
@@ -69,7 +69,7 @@ class ServiceContainer implements IDependencyInjection
         $reflection = new ReflectionClass($class);
 
         return $reflection->isInterface()
-            ? $this->get($class) ?: error(DependencyNotFound::class, $class)
+            ? ($this->get($class) ?: throw new DependencyNotFound($class))
             : (($constructor = $reflection->getConstructor())
                 ? $reflection->newInstanceArgs($this->getArguments($constructor, $params))
                 : $reflection->newInstance());
@@ -84,7 +84,7 @@ class ServiceContainer implements IDependencyInjection
         if (is_array($struct) && is_string($struct[0])) {
             $reflectionClass = new ReflectionClass($struct[0]);
             if (!$reflectionClass->getMethod($struct[1])->isStatic()) {
-                error(NonStaticCall::class, ...$struct);
+                throw make(NonStaticCall::class, ...$struct);
             }
         }
 
@@ -132,7 +132,7 @@ class ServiceContainer implements IDependencyInjection
                 ? $defaults[$paramName]
                 : (array_key_exists($position, $defaults) ? $defaults[$position] : $this->makeArgument($param));
         }
-        
+
         return $arguments;
     }
 
@@ -154,9 +154,9 @@ class ServiceContainer implements IDependencyInjection
             foreach ($types as $unionType) {
                 try {
                     $result = $this->makeNamedArgument($param, $unionType);
-                    
+
                     break;
-                } catch (DependencyNotFound|BadParamsToDependencyInjection) {
+                } catch (DependencyNotFound | BadParamsToDependencyInjection) {
                     $result = null;
                 }
             }
@@ -173,8 +173,8 @@ class ServiceContainer implements IDependencyInjection
     private function makeNamedArgument(ReflectionParameter $param, ReflectionNamedType $type)
     {
         return $type->isBuiltin()
-                ? $this->makeArgumentDefault($param)
-                : $this->makeArgumentObject($param, $type->getName());
+            ? $this->makeArgumentDefault($param)
+            : $this->makeArgumentObject($param, $type->getName());
     }
 
     /**
@@ -186,7 +186,7 @@ class ServiceContainer implements IDependencyInjection
      */
     protected function makeArgumentObject(ReflectionParameter $param, string $class): ?object
     {
-        return $this->get($class) ?? ($param->allowsNull() ? null : error(DependencyNotFound::class, $class));
+        return $this->get($class) ?? ($param->allowsNull() ? null : throw new DependencyNotFound($class));
     }
 
     /**
@@ -197,10 +197,12 @@ class ServiceContainer implements IDependencyInjection
      */
     protected function makeArgumentDefault(ReflectionParameter $param)
     {
-        return $param->allowsNull() || ($param->isOptional() && !$param->isDefaultValueAvailable()) ? null : ($param->isDefaultValueAvailable() ? $param->getDefaultValue() : error(
-                BadParamsToDependencyInjection::class,
-                $param->getDeclaringFunction()->getName(),
-                $param
-            ));
+        if ($param->allowsNull() || ($param->isOptional() && !$param->isDefaultValueAvailable())) {
+            return null;
+        } else if ($param->isDefaultValueAvailable()) {
+            return $param->getDefaultValue();
+        } else {
+            throw new BadParamsToDependencyInjection($param->getDeclaringFunction()->getName(), $param);
+        }
     }
 }

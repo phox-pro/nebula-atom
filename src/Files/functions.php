@@ -57,22 +57,6 @@ if (!function_exists('get')) {
     }
 }
 
-if (!function_exists('error')) {
-    /**
-     * Throw error
-     *
-     * @throws $class
-     * 
-     * @param string $class
-     * @param mixed ...$params
-     * @return void
-     */
-    function error(string $class, ...$params)
-    {
-        throw make($class, $params);
-    }
-}
-
 if (!function_exists('app')) {
     /**
      * Get Application instance

@@ -2,19 +2,26 @@
 
 namespace Phox\Nebula\Atom;
 
+use LogicException;
 use Phox\Nebula\Atom\Implementation\Application;
-use Phox\Nebula\Atom\Implementation\States\DefineState;
-use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Nebula\Atom\Implementation\Functions;
+use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 use PHPUnit\Framework\TestCase as FrameworkTestCase;
 
 class TestCase extends FrameworkTestCase 
 {
+    protected Application $nebula;
+
     protected function setUp(): void
     {
-        \Phox\Nebula\Atom\Files\init();
-        get(Application::class)->addProvider(make(AtomProvider::class));
-        get(IStateContainer::class)->clearListeners();
+        $this->nebula = new Application();
+
         parent::setUp();
+    }
+
+    protected function container(): IDependencyInjection
+    {
+        return Functions::container() ?? throw new LogicException();
     }
 
     /**
@@ -24,9 +31,10 @@ class TestCase extends FrameworkTestCase
      * @param string $message
      * @return void
      */
-    protected function assertIsSingleton($object, string $message = '')
+    protected function assertIsSingleton(object|string $object, string $message = ''): void
     {
-        $object = is_object($object) ? get_class($object) : $object;
-        $this->assertSame(get($object), get($object), $message);
+        $object = is_object($object) ? $object::class : $object;
+
+        $this->assertSame($this->container()->get($object), $this->container()->get($object), $message);
     }
 }

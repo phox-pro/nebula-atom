@@ -2,63 +2,45 @@
 
 namespace Phox\Nebula\Atom\Notion\Interfaces;
 
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
-use Phox\Nebula\Atom\Implementation\Exceptions\MustImplementInterface;
+use Phox\Nebula\Atom\Implementation\Basics\ObjectCollection;
+use Phox\Nebula\Atom\Notion\Abstracts\State;
 
 interface IStateContainer
 {
     /**
-     * Get all States
-     *
-     * @return State[]|Collection
-     */
-    public function getAll() : Collection;
-
-    /**
      * Get root States
      *
-     * @return State[]|Collection
+     * @return ObjectCollection<State>
      */
-    public function getRoot() : Collection;
+    public function getRoot() : ObjectCollection;
 
     /**
      * Get state children
      *
      * @param string $parentClass
-     * @return State[]|Collection
+     *
+     * @return ObjectCollection<State>
      */
-    public function getChildren(string $parentClass) : Collection;
+    public function getChildren(string $parentClass) : ObjectCollection;
 
     /**
      * Add State to container
-     *
-     * @param string $stateClass
-     * 
-     * @throws MustImplementInterface
-     * @throws StateExistsException
-     * 
-     * @return void
      */
-    public function add(string $stateClass);
+    public function add(State $state): void;
 
     /**
      * Add State to container and set as child
      *
-     * @param string $stateClass
-     * @param string $parentClass
-     * 
-     * @throws MustImplementInterface
-     * @throws StateExistsException
-     * 
-     * @return void
-     */
-    public function addAfter(string $stateClass, string $parentClass);
-
-    /**
-     * Delete all listeners from states.
+     * @param State $state
+     * @param class-string<State> $parentClass
      *
      * @return void
      */
-    public function clearListeners();
+    public function addAfter(State $state, string $parentClass): void;
+
+    /**
+     * @param class-string<State> $state
+     * @return State|null
+     */
+    public function getState(string $state): ?State;
 }

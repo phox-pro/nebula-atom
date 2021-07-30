@@ -2,80 +2,87 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
+use Phox\Nebula\Atom\Implementation\Basics\ObjectCollection;
+use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\Exceptions\MustExtends;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateNotExists;
-use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
-use Phox\Nebula\Atom\Implementation\Exceptions\MustImplementInterface;
 
 class StateContainer implements IStateContainer 
 {
-    protected Collection $root;
+    /** @var ObjectCollection<State> */
+    protected ObjectCollection $root;
 
-    protected Collection $children;
-
-    protected Collection $all;
+    /** @var ObjectCollection<ObjectCollection<State>> */
+    protected ObjectCollection $children;
 
     public function __construct()
     {
-        $this->root = new Collection('string');
-        $this->children = new Collection(Collection::class);
-        $this->all = new Collection('string');
+        $this->root = new ObjectCollection(State::class);
+        $this->children = new ObjectCollection(ObjectCollection::class);
     }
 
-    public function getAll(): Collection
-    {
-        return $this->all;
-    }
-
-    public function getRoot(): Collection
+    public function getRoot(): ObjectCollection
     {
         return $this->root;
     }
 
-    public function getChildren(string $parentClass): Collection
+    public function getChildren(string $parentClass): ObjectCollection
     {
-        return ($parentIndex = $this->all->search($parentClass)) === false
-            ? new Collection('string')
-            : ($this->children->hasIndex($parentIndex)
-                ? $this->children[$parentIndex]
-                : new Collection('string'));
+        return $this->children->get($parentClass) ?? new ObjectCollection(State::class);
     }
 
-    public function add(string $stateClass)
+    /**
+     * @param State $state
+     * @throws Exceptions\BadCollectionType
+     * @throws StateExistsException
+     */
+    public function add(State $state): void
     {
-        $this->addToAll($stateClass);
-        $this->root->add($stateClass);
+        if (!is_null($this->getState($state::class))) {
+            throw new StateExistsException($state::class);
+        }
+
+        $this->root->add($state);
     }
 
-    public function addAfter(string $stateClass, string $parentClass)
+    /**
+     * @throws Exceptions\CollectionHasKey
+     * @throws Exceptions\BadCollectionType
+     * @throws StateNotExists
+     */
+    public function addAfter(State $state, string $parentClass): void
     {
-        $parentIndex = $this->all->search($parentClass);
-        if ($parentIndex === false) {
-            error(StateNotExists::class, $parentClass);
+        if (!$this->root->hasClass($parentClass)) {
+            throw new StateNotExists($parentClass);
         }
-        $this->addToAll($stateClass);
-        $this->children->hasIndex($parentIndex) ?: $this->children->set($parentIndex, new Collection('string'));
-        $this->children->get($parentIndex)->add($stateClass);
+
+        foreach ($this->children as $children) {
+            if (!$children->hasClass($parentClass)) {
+                throw new StateNotExists($parentClass);
+            }
+        }
+
+        $this->children->hasIndex($parentClass) ?: $this->children->set($parentClass, new ObjectCollection(State::class));
+        $this->children->get($parentClass)->add($state);
     }
 
-    public function clearListeners()
+    public function getState(string $state): ?State
     {
-        foreach ($this->all as $state) {
-            $state::getListeners()->clear();
+        foreach ($this->root as $existsState) {
+            if ($state == $existsState::class) {
+                return $existsState;
+            }
         }
-    }
 
-    protected function addToAll(string $stateClass)
-    {
-        if (!is_subclass_of($stateClass, State::class)) {
-            error(MustExtends::class, $stateClass, State::class);
+        foreach ($this->children as $children) {
+            foreach ($children as $child) {
+                if ($state == $child::class) {
+                    return $child;
+                }
+            }
         }
-        if ($this->all->has($stateClass)) {
-            error(StateExistsException::class, $stateClass);
-        }
-        $this->all->add($stateClass);
+
+        return null;
     }
 }

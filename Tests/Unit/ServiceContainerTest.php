@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use Phox\Nebula\Atom\Implementation\Application;
+use Phox\Nebula\Atom\Implementation\Functions;
 use stdClass;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Implementation\ServiceContainer;
@@ -12,6 +14,7 @@ class ServiceContainerTest extends TestCase
 {
     /**
      * Fake class from stdClass
+     * @var class-string<stdClass>
      */
     protected string $fakeClass;
 
@@ -21,135 +24,125 @@ class ServiceContainerTest extends TestCase
         $this->fakeClass = $this->getMockClass(stdClass::class);
     }
 
-    /**
-     * @test
-     */
-    public function initDI()
+    public function testInitDI(): void
     {
-        $this->assertTrue(function_exists('\Phox\Nebula\Atom\Files\init'));
-        $this->assertTrue(function_exists('container'));
-        $result = container();
+        $result = Functions::container();
+
         $this->assertInstanceOf(IDependencyInjection::class, $result);
+        $this->assertInstanceOf(ServiceContainer::class, $result);
     }
 
-    /**
-     * @test
-     */
-    public function basicGet()
+    public function testBasicGet(): void
     {
-        $object = container()->get($this->fakeClass);
+        $object = $this->container()->get($this->fakeClass);
+
         $this->assertInstanceOf($this->fakeClass, $object);
     }
 
-    /**
-     * @test
-     */
-    public function basicMake()
+    public function testBasicMake(): void
     {
-        $object = container()->make($this->fakeClass);
+        $object = $this->container()->make($this->fakeClass);
+
         $this->assertInstanceOf($this->fakeClass, $object);
     }
 
-    /**
-     * @test
-     */
-    public function basicCall()
+    public function testBasicCall(): void
     {
-        $fakeObject = $this->getMockBuilder($this->fakeClass)->addMethods(['call', 'callStatic'])->getMock();
+        $fakeObject = $this->getMockBuilder($this->fakeClass)->addMethods(['call'])->getMock();
         $fakeObject->method('call')->willReturn(true);
-        $this->assertTrue(container()->call([$fakeObject, 'call']));
+
+        $this->assertTrue($this->container()->call([$fakeObject, 'call']));
     }
 
-    /**
-     * @test
-     */
-    public function singleton()
+    public function testSingleton(): void
     {
         $object = new stdClass;
-        container()->singleton($object);
-        $this->assertSame($object, container()->get(stdClass::class));
-        $this->assertNotSame($object, container()->make(stdClass::class));
-        container()->singleton($this->createMock(stdClass::class), stdClass::class);
-        $singleton = container()->get(stdClass::class);
+        $this->container()->singleton($object);
+
+        $this->assertSame($object, $this->container()->get(stdClass::class));
+        $this->assertNotSame($object, $this->container()->make(stdClass::class));
+
+        $this->container()->singleton($this->createMock(stdClass::class), stdClass::class);
+        $singleton = $this->container()->get(stdClass::class);
+
         $this->assertNotSame($object, $singleton);
         $this->assertInstanceOf(stdClass::class, $singleton);
     }
 
-    /**
-     * @test
-     */
-    public function transient()
+    public function testTransient(): void
     {
-        container()->transient(stdClass::class, stdClass::class);
-        $this->assertEquals(new stdClass, container()->get(stdClass::class));
-        $this->assertEquals(new stdClass, container()->make(stdClass::class));
+        $this->container()->transient(stdClass::class, stdClass::class);
+
+        $this->assertEquals(new stdClass, $this->container()->get(stdClass::class));
+        $this->assertEquals(new stdClass, $this->container()->make(stdClass::class));
+
         $mockClass = $this->getMockClass(stdClass::class);
-        container()->transient($mockClass, stdClass::class);
-        $transient = container()->get(stdClass::class);
+        $this->container()->transient($mockClass, stdClass::class);
+        $transient = $this->container()->get(stdClass::class);
+
         $this->assertNotEquals(new stdClass, $transient);
         $this->assertEquals(new $mockClass, $transient);
         $this->assertInstanceOf(stdClass::class, $transient);
     }
 
-    /**
-     * @test
-     */
-    public function callCallback()
+    public function testCallCallback(): void
     {
-        $this->assertTrue(container()->call(fn() => true));
+        $this->assertTrue($this->container()->call(fn() => true));
+
         $this->assertInstanceOf(
             stdClass::class,
-            container()->call(fn(stdClass $obj) => $obj)
+            $this->container()->call(fn(stdClass $obj) => $obj)
         );
+
         $object = new stdClass;
+
         $this->assertNotSame(
             $object,
-            container()->call(fn(stdClass $obj) => $obj)
+            $this->container()->call(fn(stdClass $obj) => $obj)
         );
-        container()->singleton($object);
+
+        $this->container()->singleton($object);
+
         $this->assertSame(
             $object,
-            container()->call(fn(stdClass $obj) => $obj)
+            $this->container()->call(fn(stdClass $obj) => $obj)
         );
     }
 
-    /**
-     * @test
-     */
-    public function callWithParams()
+    public function testCallWithParams(): void
     {
         $this->assertEquals(
             'default',
-            container()->call(fn(string $some = 'default') => $some)
+            $this->container()->call(fn(string $some = 'default') => $some)
         );
-        $this->assertNull(container()->call(fn(?string $some) => $some));
-        $this->assertNull(container()->call(fn($some) => $some));
+
+        $this->assertNull($this->container()->call(fn(?string $some) => $some));
+        $this->assertNull($this->container()->call(fn($some) => $some));
+
         $this->expectException(BadParamsToDependencyInjection::class);
-        container()->call(fn(string $some) => $some);
+
+        $this->container()->call(fn(string $some) => $some);
     }
 
-    /**
-     * @test
-     */
-    public function replaceOriginalDI()
+    public function testReplaceOriginalDI(): void
     {
         $mock = $this->getMockBuilder(IDependencyInjection::class)->getMock();
-        container()->singleton($mock, IDependencyInjection::class);
-        $container = container()->get(IDependencyInjection::class);
-        $this->assertSame($mock, $container);
-        $this->assertNotInstanceOf(ServiceContainer::class, $container);
+
+        $this->container()->singleton($mock, IDependencyInjection::class);
+
+        $this->assertSame($mock, $this->container());
+        $this->assertNotInstanceOf(ServiceContainer::class, $this->container());
     }
 
-    /**
-     * @test
-     */
-    public function callInvokeableObject()
+    public function testCallInvokeableObject(): void
     {
         $object = new class {
-            public function __invoke() {
+            public function __invoke(): string
+            {
                 return "Work!";
             }
         };
-        $this->assertEquals("Work!", call($object));
+
+        $this->assertEquals("Work!", $this->container()->call($object));
     }
 }

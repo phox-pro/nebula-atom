@@ -5,11 +5,7 @@
     "autoload": {
         "psr-4": {
             "Phox\\Nebula\\Atom\\": "src/"
-        },
-        "files": [
-            "src/Files/init.php",
-            "src/Files/functions.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {
@@ -17,9 +13,10 @@
         }
     },
     "require": {
-        "php": "^7.4"
+        "php": "^8.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.3"
+        "phpunit/phpunit": "^9.3",
+        "vimeo/psalm": "^4.8"
     }
 }

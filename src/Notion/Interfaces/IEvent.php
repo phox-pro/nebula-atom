@@ -10,30 +10,33 @@ interface IEvent
      * Add listener to event
      *
      * @param callable $listener
+     *
      * @return void
      */
-    public static function listen(callable $listener);
+    public function listen(callable $listener): void;
 
     /**
      * Notify all listeners
      *
      * @param mixed ...$params
+     *
      * @return void
      */
-    public static function notify(...$params);
+    public function notify(...$params): void;
 
     /**
      * Notify all listeners and provide params to caller.
      *
      * @param array $params
+     *
      * @return void
      */
-    public static function notifyRaw(array $params = []);
+    public function notifyRaw(array $params = []): void;
 
     /**
      * Get all listeners
      *
-     * @return array
+     * @return Collection<callable>
      */
-    public static function getListeners() : Collection;
+    public function getListeners() : Collection;
 }

@@ -2,32 +2,51 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
+use Phox\Nebula\Atom\AtomProvider;
+use Phox\Nebula\Atom\Implementation\Basics\ObjectCollection;
+use Phox\Nebula\Atom\Implementation\Events\ApplicationInitEvent;
+use Phox\Nebula\Atom\Implementation\Exceptions\BadCollectionType;
 use Phox\Nebula\Atom\Notion\Abstracts\Provider;
 use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\States\ConsoleState;
-use Phox\Nebula\Atom\Implementation\States\DefineState;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
+use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 
 class Application 
 {
-    /**
-     * Providers collection
-     */
-    protected Collection $providers;
+    public const GLOBALS_KEY = 'nebulaApplicationInstance';
 
-	public function __construct()
+    public IDependencyInjection $dependencyInjection;
+    public ApplicationInitEvent $eInit;
+
+    /**
+     * @var ObjectCollection<Provider>
+     */
+    protected ObjectCollection $providers;
+
+    /**
+     * @throws Exceptions\AnotherInjectionExists
+     * @throws BadCollectionType|Exceptions\CollectionHasKey
+     */
+    public function __construct()
 	{
-        $this->providers = new Collection(Provider::class);
+	    $this->dependencyInjection = new ServiceContainer();
+	    $this->dependencyInjection->singleton($this);
+	    $this->dependencyInjection->singleton(new StateContainer(), IStateContainer::class);
+	    $this->dependencyInjection->singleton(ExceptionHandler::class);
+
+        $this->providers = new ObjectCollection(Provider::class);
+        $this->addProvider(new AtomProvider());
+
+        $GLOBALS[static::GLOBALS_KEY] = fn(): ?Application => $this->dependencyInjection->get(self::class);
     }
-    
+
     /**
      * Get all application providers
      *
-     * @return Provider[]|Collection
+     * @return ObjectCollection<Provider>
      */
-    public function getProviders() : Collection
+    public function getProviders() : ObjectCollection
     {
         return $this->providers;
     }
@@ -37,53 +56,64 @@ class Application
      *
      * @param Provider $provider
      * @return void
+     * @throws Exceptions\BadCollectionType
+     * @throws Exceptions\CollectionHasKey
      */
-    public function addProvider(Provider $provider)
+    public function addProvider(Provider $provider): void
     {
         $this->providers->set(get_class($provider), $provider);
-        !is_callable([$provider, 'define']) ?: call([$provider, 'define']);
+
+        if (is_callable($provider)) {
+            $this->dependencyInjection->call($provider);
+        }
     }
 
     /**
      * Run Nebula application
      *
      * @return void
+     * @throws Exceptions\AnotherInjectionExists
      */
-    public function run()
+    public function run(): void
     {
        $this->enrichment(); 
     }
 
     /**
-     * Run Nebula application as CLI
-     *
-     * @return void
+     * @throws Exceptions\AnotherInjectionExists
      */
-    public function runConsole()
+    protected function enrichment(): void
     {
-        get(IStateContainer::class)->addAfter(ConsoleState::class, DefineState::class);
-        $this->enrichment();
-    }
+        /** @var IStateContainer $stateContainer */
+        $stateContainer = $this->dependencyInjection->get(IStateContainer::class);
+        $root = $stateContainer->getRoot();
 
-    protected function enrichment()
-    {
-        $root = get(IStateContainer::class)->getRoot();
         foreach ($root as $state) {
+            $state->setPrevious($previous ?? null);
             $this->callState($state);
+
+            $previous = $state;
         }
     }
 
-    protected function callState(string $stateClass)
+    /**
+     * @throws Exceptions\AnotherInjectionExists
+     */
+    protected function callState(State $state)
     {
-        $state = make($stateClass);
-        container()->singleton($state, State::class);
-        if ($state instanceof IEvent) {
-            $state::notify();
-        }
-        !is_callable([$state, 'execute']) ?: call([$state, 'execute']);
-        $children = get(IStateContainer::class)->getChildren($stateClass);
+        /** @var IStateContainer $stateContainer */
+        $stateContainer = $this->dependencyInjection->get(IStateContainer::class);
+        $this->dependencyInjection->singleton($state, State::class);
+
+        $state->notify();
+
+        $children = $stateContainer->getChildren($state::class);
+
         foreach ($children as $child) {
+            $child->setPrevious($previous ?? null);
             $this->callState($child);
+
+            $previous = $child;
         }
     }
 }

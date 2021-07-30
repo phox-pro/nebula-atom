@@ -2,6 +2,12 @@
 
 namespace Tests\Unit;
 
+use Phox\Nebula\Atom\AtomProvider;
+use Phox\Nebula\Atom\Implementation\Basics\ObjectCollection;
+use Phox\Nebula\Atom\Implementation\Exceptions\AnotherInjectionExists;
+use Phox\Nebula\Atom\Implementation\Exceptions\BadCollectionType;
+use Phox\Nebula\Atom\Implementation\Exceptions\CollectionHasKey;
+use Phox\Nebula\Atom\Implementation\Functions;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Implementation\Application;
 use Phox\Nebula\Atom\Implementation\Basics\Collection;
@@ -9,90 +15,69 @@ use Phox\Nebula\Atom\Notion\Abstracts\Provider;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
-use Phox\Nebula\Atom\Notion\Traits\TEvent;
+use PHPUnit\Framework\MockObject\MockObject;
 use stdClass;
 
 class ApplicationTest extends TestCase 
 {
-    /**
-     * @test
-     */
-    public function coreTest()
+    public function testApplicationInDI(): void
     {
-        $app = get(Application::class);
-        $this->assertInstanceOf(Application::class, $app);
-        $this->assertSame($app, app());
+        $application = new Application();
+        $this->assertSame($application, $this->container()->get(Application::class));
+        $this->assertSame($application, Functions::nebula());
     }
 
     /**
-     * @test
+     * @throws CollectionHasKey
+     * @throws BadCollectionType
      */
-    public function addProvidersTest()
+    public function testCanAddProviders(): void
     {
-        $providers = app()->getProviders();
-        $this->assertInstanceOf(Collection::class, $providers);
+        $providers = $this->nebula->getProviders();
+
+        $this->assertInstanceOf(ObjectCollection::class, $providers);
         $this->assertEquals(1, $providers->count());
+        $this->assertInstanceOf(AtomProvider::class, $providers->first());
+
         $provider = new class extends Provider {};
-        app()->addProvider($provider);
+        $this->nebula->addProvider($provider);
+
         $this->assertArrayHasKey(get_class($provider), $providers);
     }
 
     /**
-     * @test
+     * @throws CollectionHasKey
+     * @throws BadCollectionType
      */
-    public function runApplicationTest()
+    public function testApplicationCallProvider(): void
     {
-        /**
-         * @var Provider|\PHPUnit\Framework\MockObject\MockObject $provider
-         */
-        $provider = $this->getMockBuilder(Provider::class)->addMethods(['define'])->getMock();
-        $provider->expects($this->once())->method('define');
-        app()->addProvider($provider);
-        app()->run();
+        /** @var Provider|MockObject $provider */
+        $provider = $this->getMockBuilder(Provider::class)->addMethods(['__invoke'])->getMock();
+        $provider->expects($this->once())->method('__invoke');
+
+        $this->nebula->addProvider($provider);
     }
 
     /**
-     * @test
+     * @throws CollectionHasKey
+     * @throws BadCollectionType
+     * @throws AnotherInjectionExists
      */
-    public function registerLogicTest()
+    public function testRegisterStatesFromProvider(): void
     {
-        container()->singleton(new class extends stdClass {
-            public bool $checked = false; 
-        }, stdClass::class);
-        call(fn (stdClass $obj) => $this->assertFalse($obj->checked));
-        $provider = new class extends Provider {
-            public function define(stdClass $object)
+        $state = $this->getMockBuilder(State::class)->getMock();
+        $state->expects($this->once())->method('notify');
+
+        $provider = new class($state) extends Provider {
+            public function __construct(private State $state) {}
+
+            public function __invoke(IStateContainer $stateContainer)
             {
-                $object->checked = true;
+                $stateContainer->add($this->state);
             }
         };
-        app()->addProvider($provider);
-        app()->run();
-        $this->assertTrue(get(stdClass::class)->checked);
-    }
 
-    /**
-     * @test
-     */
-    public function registerStateFromProvider()
-    {
-        $provider = new class($this) extends Provider {
-            private ApplicationTest $case;
-
-            public function __construct(ApplicationTest $case)
-            {
-                $this->case = $case; 
-            }
-
-            public function define(IStateContainer $states) {
-                $stateClass = get_class(new class extends State implements IEvent {
-                    use TEvent;
-                });
-                $stateClass::listen(fn (State $state) => $this->case->assertInstanceOf($stateClass, $state));
-                $states->add($stateClass);
-            }
-        };
-        app()->addProvider($provider);
-        app()->run();
+        $this->nebula->addProvider($provider);
+        $this->nebula->run();
     }
 }

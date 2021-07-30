@@ -7,44 +7,59 @@ interface IDependencyInjection
     /**
      * Add dependency injection as singleton
      *
-     * @param object|string $object Instance or Class for registration
-     * @param string|null $dependency Full name of dependency <class, interface>
-     * @return void
+     * @template T
+     * @param T|class-string<T> $object Instance or Class for registration
+     * @param class-string<T>|null $dependency Full name of dependency <class, interface>
+     *
+     * @return T|null Old singleton if exists
      */
-    public function singleton($object, ?string $dependency = null);
+    public function singleton(object|string $object, ?string $dependency = null): ?object;
 
     /**
      * Add dependency injection as transient
      *
-     * @param string $class Class for registration
-     * @param string|null $dependency Full name of dependency <class, interface>
+     * @template T
+     * @param class-string<T> $class Class for registration
+     * @param class-string<T>|null $dependency Full name of dependency <class, interface>
+     *
+     * @return class-string<T>|null Old class if exists
+     */
+    public function transient(string $class, ?string $dependency = null): ?string;
+
+    /**
+     * @param string $dependency
      * @return void
      */
-    public function transient(string $class, ?string $dependency = null);
+    public function deleteDependency(string $dependency): void;
 
     /**
      * Create object with injections
      *
-     * @param string $class Full name of class
+     * @template T
+     * @param class-string<T> $class Full name of class
      * @param array $params Params to set in object constructor
-     * @return object
+     *
+     * @return T
      */
     public function make(string $class, array $params = []) : object;
 
     /**
-     * Call structure with injections
+     * Callback with injections
      *
-     * @param callable $struct Structure to call
+     * @param callable $callback Structure to call
      * @param array $params Params to set in function
-     * @return void
+     *
+     * @return mixed
      */
-    public function call(callable $struct, array $params = []);
+    public function call(callable $callback, array $params = []): mixed;
 
     /**
      * Get instance of expected class from container
      *
-     * @param string $class Class name
-     * @return object|null
+     * @template T
+     * @param class-string<T> $class
+     *
+     * @return ?T
      */
     public function get(string $class) : ?object;
 

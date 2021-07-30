@@ -4,6 +4,7 @@ namespace Phox\Nebula\Atom\Implementation;
 
 use Closure;
 use ReflectionClass;
+use ReflectionException;
 use ReflectionMethod;
 use ReflectionFunction;
 use ReflectionParameter;
@@ -15,14 +16,7 @@ use Phox\Nebula\Atom\Implementation\Exceptions\BadParamsToDependencyInjection;
 
 class ServiceContainer implements IDependencyInjection 
 {
-    /**
-     * Registered singletons
-     */
     private array $singletons = [];
-
-    /**
-     * Registered transients
-     */
     private array $transients = [];
 
     public function __construct()
@@ -35,130 +29,140 @@ class ServiceContainer implements IDependencyInjection
         $this->singletons = [];
         $this->transients = [];
         $this->singleton($this, IDependencyInjection::class);
+
         return $this;
     }
 
-    public function singleton($object, ?string $dependency = null)
+    public function singleton(object|string $object, ?string $dependency = null): ?object
     {
         $dependency ??= is_object($object) ? get_class($object) : $object;
         if (array_key_exists($dependency, $this->transients)) {
-            error(AnotherInjectionExists::class, $dependency);
+            throw new AnotherInjectionExists($dependency);
         }
+
+        $oldDependency = $this->singletons[$dependency] ?? null;
+
         $this->singletons[$dependency] = $object;
+
+        return $oldDependency;
     }
 
-    public function transient(string $class, ?string $dependency = null)
+    public function transient(string $class, ?string $dependency = null): ?string
     {
         $dependency ??= $class;
         if (array_key_exists($dependency, $this->singletons)) {
-            error(AnotherInjectionExists::class, $dependency);
+            throw new AnotherInjectionExists($dependency);
         }
+
+        $oldDependency = $this->transients[$dependency] ?? null;
+
         $this->transients[$dependency] = $class;
+
+        return $oldDependency;
+    }
+
+    public function deleteDependency(string $dependency): void
+    {
+        if (array_key_exists($dependency, $this->singletons)) {
+            unset($this->singletons[$dependency]);
+        } elseif (array_key_exists($dependency, $this->transients)) {
+            unset($this->transients[$dependency]);
+        }
     }
 
     public function make(string $class, array $params = []): object
     {
         $reflection = new ReflectionClass($class);
-        return $reflection->isInterface()
-            ? $this->get($class) ?: error(DependencyNotFound::class, $class)
-            : (($constructor = $reflection->getConstructor())
-                ? $reflection->newInstanceArgs($this->getArguments($constructor, $params))
-                : $reflection->newInstance() 
-            );
+
+        if ($reflection->isInterface()) {
+            return $this->get($class) ?? throw new DependencyNotFound($class);
+        }
+
+        $constructor = $reflection->getConstructor();
+
+        return $constructor
+            ? $reflection->newInstanceArgs($this->getArguments($constructor, $params))
+            : $reflection->newInstance();
     }
 
-    public function call($struct, array $params = [])
+    public function call(callable $callback, array $params = []): mixed
     {
-        if (is_string($struct) && !function_exists($struct)) {
-            $struct = explode('::', $struct);
+        if (is_string($callback) && !function_exists($callback)) {
+            $callback = explode('::', $callback);
         }
-        if (is_array($struct) && is_string($struct[0])) {
-            $reflectionClass = new ReflectionClass($struct[0]);
-            if (!$reflectionClass->getMethod($struct[1])->isStatic()) {
-                error(NonStaticCall::class, ...$struct);
-            }
+
+        if (is_object($callback) && !($callback instanceof Closure)) {
+            $callback = [$callback, '__invoke'];
         }
-        if (is_object($struct) && !($struct instanceof Closure)) {
-            $struct = [$struct, '__invoke'];
-        }
-        $reflection = is_array($struct)
-            ? new ReflectionMethod(...$struct)
-            : new ReflectionFunction($struct);
-        return call_user_func_array($struct, $this->getArguments($reflection, $params));
+
+        $reflection = is_array($callback)
+            ? new ReflectionMethod(...$callback)
+            : new ReflectionFunction($callback);
+
+        return call_user_func_array($callback, $this->getArguments($reflection, $params));
     }
 
     public function get(string $class): ?object
     {
         if (array_key_exists($class, $this->singletons)) {
-            return is_object($this->singletons[$class])
-                ? $this->singletons[$class]
-                : ($this->singletons[$class] = make($this->singletons[$class]));
-        } else if (array_key_exists($class, $this->transients)) {
+            if (!is_object($this->singletons[$class])) {
+                $this->singletons[$class] = $this->make($this->singletons[$class]);
+            }
+
+            return $this->singletons[$class];
+        }
+
+        if (array_key_exists($class, $this->transients)) {
             return $this->make($this->transients[$class]);
         }
+
         $reflection = new ReflectionClass($class);
+
         return $reflection->isInterface() ? null : $this->make($class);
     }
 
-    /**
-     * Prepare arguments to function
-     *
-     * @param ReflectionMethod|ReflectionFunction $method
-     * @param array $defaults
-     * @return array
-     */
-    protected function getArguments($method, array $defaults) : array
+    protected function getArguments(ReflectionMethod|ReflectionFunction $method, array $defaults) : array
     {
         $parameters = $method->getParameters();
         $arguments = [];
+
         foreach ($parameters as $param) {
             $position = $param->getPosition();
+
             $arguments[$position] = array_key_exists($paramName = $param->getName(), $defaults)
                 ? $defaults[$paramName]
                 : (array_key_exists($position, $defaults) ? $defaults[$position] : $this->makeArgument($param));
         }
+
         return $arguments;
     }
 
-    /**
-     * Make one argument
-     *
-     * @param ReflectionParameter $param
-     * @return void
-     */
-    protected function makeArgument(ReflectionParameter $param)
+    protected function makeArgument(ReflectionParameter $param): mixed
     {
         return ($class = $param->getClass())
             ? $this->makeArgumentObject($param, $class->getName())
             : $this->makeArgumentDefault($param);
     }
 
-    /**
-     * Make object as argument
-     *
-     * @param ReflectionParameter $param
-     * @param string $class
-     * @return object|null
-     */
     protected function makeArgumentObject(ReflectionParameter $param, string $class) : ?object
     {
-        return $this->get($class) ?? ($param->allowsNull() ? null : error(DependencyNotFound::class, $class));
+        return $this->get($class) ?? ($param->allowsNull() ? null : throw new DependencyNotFound($class));
     }
 
-    /**
-     * Make value as argument
-     *
-     * @param ReflectionParameter $param
-     * @return void
-     */
-    protected function makeArgumentDefault(ReflectionParameter $param)
+    protected function makeArgumentDefault(ReflectionParameter $param): mixed
     {
-        return $param->allowsNull() || ($param->isOptional() && !$param->isDefaultValueAvailable()) ? null : (
-            $param->isDefaultValueAvailable() ? $param->getDefaultValue() : error(
-                BadParamsToDependencyInjection::class,
-                $param->getDeclaringFunction()->getName(),
-                $param
-            )
-        );
+        if ($param->allowsNull()) {
+            return null;
+        }
+
+        if ($param->isOptional() && !$param->isDefaultValueAvailable()) {
+            return null;
+        }
+
+        if ($param->isDefaultValueAvailable()) {
+            return $param->getDefaultValue();
+        }
+
+        throw new BadParamsToDependencyInjection($param->getDeclaringFunction()->getName(), $param);
     }
 }

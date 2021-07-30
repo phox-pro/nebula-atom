@@ -2,16 +2,15 @@
 
 namespace Tests\Unit;
 
+use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
 use stdClass;
 use Exception;
 use Phox\Nebula\Atom\TestCase;
-use Phox\Nebula\Atom\Notion\Traits\TEvent;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Implementation\Basics\Collection;
 use Phox\Nebula\Atom\Implementation\Exceptions\MustExtends;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
-use Phox\Nebula\Atom\Implementation\States\DefineState;
 
 class StatesTest extends TestCase 
 {
@@ -20,89 +19,53 @@ class StatesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->stateContainer = get(IStateContainer::class);
+        $this->stateContainer = $this->container()->get(IStateContainer::class);
     }
 
-    /**
-     * @test
-     */
-    public function dependencyTest()
+    public function testAddMethod(): void
     {
-        $container = get(IStateContainer::class);
-        $this->assertInstanceOf(IStateContainer::class, $container);
+        $mock = $this->createMock(State::class);
+
+        $this->stateContainer->add($mock);
+
+        $this->assertTrue($this->stateContainer->getRoot()->has($mock));
     }
 
-    /**
-     * @test
-     */
-    public function listTest()
+    public function testStateExistsError(): void
     {
-        $all = $this->stateContainer->getAll();
-        $root = $this->stateContainer->getRoot();
-        $this->assertInstanceOf(Collection::class, $all);
-        $this->assertInstanceOf(Collection::class, $root);
-        $this->assertEquals('string', $all->getType());
-    }
+        $mock = $this->createMock(State::class);
 
-    /**
-     * @test
-     */
-    public function addTest()
-    {
-        $mockClass = $this->getMockClass(State::class);
-        $this->stateContainer->add($mockClass);
-        $this->assertEquals([DefineState::class, $mockClass], $this->stateContainer->getAll()->all());
-        $this->assertEquals([DefineState::class, $mockClass], $this->stateContainer->getRoot()->all());
-    }
+        $this->stateContainer->add($mock);
 
-    /**
-     * @test
-     */
-    public function badStateClass()
-    {
-        $mockClass = $this->getMockClass(stdClass::class);
-        $this->expectException(MustExtends::class);
-        $this->stateContainer->add($mockClass);
-    }
-
-    /**
-     * @test
-     */
-    public function stateExistsError()
-    {
-        $mockClass = $this->getMockClass(State::class);
-        $this->stateContainer->add($mockClass);
         $this->expectException(StateExistsException::class);
-        $this->stateContainer->add($mockClass);
+        $this->stateContainer->add($mock);
     }
 
-    /**
-     * @test
-     */
-    public function addAfterTest()
+    public function testAddAfterMethod(): void
     {
-        $mockClass = $this->getMockClass(State::class);
-        $child = $this->getMockClass(State::class, [], [], $mockClass . '_child');
-        $this->stateContainer->add($mockClass);
-        $this->stateContainer->addAfter($child, $mockClass);
-        $this->assertEquals([DefineState::class, $mockClass], $this->stateContainer->getRoot()->all());
-        $this->assertEquals([DefineState::class, $mockClass, $child], $this->stateContainer->getAll()->all());
-        $children = $this->stateContainer->getChildren($mockClass);
+        $mock = $this->createMock(State::class);
+        $child = $this->getMockBuilder(State::class)
+            ->setMockClassName($mock::class . '_child')
+            ->getMock();
+
+        $this->stateContainer->add($mock);
+        $this->stateContainer->addAfter($child, $mock::class);
+
+        $rootStates = $this->stateContainer->getRoot();
+
+        $this->assertTrue($rootStates->has($mock));
+        $this->assertFalse($rootStates->has($child));
+
+        $children = $this->stateContainer->getChildren($mock::class);
+
         $this->assertInstanceOf(Collection::class, $children);
-        $this->assertEquals([$child], $children->all());
+        $this->assertTrue($children->has($child));
     }
 
-    /**
-     * @test
-     */
-    public function statesAsEvents()
+    public function testStatesAsEvents(): void
     {
-        $stateClass = get_class(new class extends State { 
-            use TEvent;
-        });
-        $errorMessage = 'State can be used as Event';
-        $stateClass::listen(fn () => error(Exception::class, $errorMessage));
-        $this->expectExceptionMessage($errorMessage);
-        $stateClass::notify();
+        $state = $this->createMock(State::class);
+
+        $this->assertTrue($state instanceof IEvent);
     }
 }

@@ -2,40 +2,47 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
-use Exception;
+use Phox\Nebula\Atom\Notion\Abstracts\Event;
+use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 use Throwable;
-use Phox\Nebula\Atom\Notion\Traits\TEvent;
-use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
 use Phox\Nebula\Atom\Implementation\Basics\Collection;
 
-class ExceptionHandler implements IEvent
+class ExceptionHandler extends Event
 {
-    use TEvent;
+    protected Collection $listeners;
+    protected IDependencyInjection $dependencyInjection;
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        $this->listeners = new Collection(Collection::class);
+        $this->dependencyInjection = Functions::container()->get(IDependencyInjection::class);
+    }
 
     public function execute(Throwable $throwable)
     {
-        static::notifyRaw([$throwable], get_class($throwable));
-    }
+        $exceptionListeners = $this->listeners->get($throwable::class);
 
-    public static function listen(callable $listener, string $exceptionClass = Exception::class)
-    {
-        static::initCollection($exceptionClass);
-        $exceptionListeners = static::$listeners->get($exceptionClass);
-        $exceptionListeners->has($listener) ?: $exceptionListeners->add($listener);
-    }
+        if (is_null($exceptionListeners)) {
+            return;
+        }
 
-    public static function notifyRaw(array $params = [], string $exceptionClass = Exception::class)
-    {
-        static::initCollection($exceptionClass);
-        $exceptionListeners = static::$listeners->get($exceptionClass);
         foreach ($exceptionListeners as $exceptionListener) {
-            call($exceptionListener, $params);
+            $this->dependencyInjection->call($exceptionListener, [$throwable]);
         }
     }
 
-    protected static function initCollection(string $exceptionClass)
+    /**
+     * @throws Exceptions\CollectionHasKey
+     * @throws Exceptions\BadCollectionType
+     */
+    public function listen(callable $listener, string $exceptionClass = Throwable::class): void
     {
-        static::$listeners ??= new Collection(Collection::class);
-        static::$listeners->hasIndex($exceptionClass) ?: static::$listeners->set($exceptionClass, new Collection('callable'));
+        $this->listeners->hasIndex($exceptionClass) ?: $this->listeners->set($exceptionClass, new Collection('callable'));
+
+        /** @var Collection<callable> $exceptionListeners */
+        $exceptionListeners = $this->listeners->get($exceptionClass);
+        $exceptionListeners->has($listener) ?: $exceptionListeners->add($listener);
     }
 }

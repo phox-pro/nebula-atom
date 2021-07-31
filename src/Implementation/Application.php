@@ -33,7 +33,6 @@ class Application
 	    $this->dependencyInjection = new ServiceContainer();
 	    $this->dependencyInjection->singleton($this);
 	    $this->dependencyInjection->singleton(new StateContainer(), IStateContainer::class);
-	    $this->dependencyInjection->singleton(ExceptionHandler::class);
 
         $this->providers = new ObjectCollection(Provider::class);
         $this->addProvider(new AtomProvider());

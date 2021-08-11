@@ -2,7 +2,7 @@
 
 namespace Phox\Nebula\Atom\Notion\Interfaces;
 
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
+use Phox\Structures\Collection;
 
 interface IEvent 
 {

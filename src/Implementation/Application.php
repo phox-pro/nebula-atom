@@ -3,14 +3,12 @@
 namespace Phox\Nebula\Atom\Implementation;
 
 use Phox\Nebula\Atom\AtomProvider;
-use Phox\Nebula\Atom\Implementation\Basics\ObjectCollection;
 use Phox\Nebula\Atom\Implementation\Events\ApplicationInitEvent;
-use Phox\Nebula\Atom\Implementation\Exceptions\BadCollectionType;
 use Phox\Nebula\Atom\Notion\Abstracts\Provider;
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Structures\ObjectCollection;
 
 class Application 
 {
@@ -26,7 +24,6 @@ class Application
 
     /**
      * @throws Exceptions\AnotherInjectionExists
-     * @throws BadCollectionType|Exceptions\CollectionHasKey
      */
     public function __construct()
 	{
@@ -55,8 +52,6 @@ class Application
      *
      * @param Provider $provider
      * @return void
-     * @throws Exceptions\BadCollectionType
-     * @throws Exceptions\CollectionHasKey
      */
     public function addProvider(Provider $provider): void
     {

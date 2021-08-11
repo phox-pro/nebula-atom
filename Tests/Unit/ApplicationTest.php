@@ -3,20 +3,15 @@
 namespace Tests\Unit;
 
 use Phox\Nebula\Atom\AtomProvider;
-use Phox\Nebula\Atom\Implementation\Basics\ObjectCollection;
 use Phox\Nebula\Atom\Implementation\Exceptions\AnotherInjectionExists;
-use Phox\Nebula\Atom\Implementation\Exceptions\BadCollectionType;
-use Phox\Nebula\Atom\Implementation\Exceptions\CollectionHasKey;
 use Phox\Nebula\Atom\Implementation\Functions;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Implementation\Application;
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
 use Phox\Nebula\Atom\Notion\Abstracts\Provider;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Structures\ObjectCollection;
 use PHPUnit\Framework\MockObject\MockObject;
-use stdClass;
 
 class ApplicationTest extends TestCase 
 {
@@ -27,10 +22,6 @@ class ApplicationTest extends TestCase
         $this->assertSame($application, Functions::nebula());
     }
 
-    /**
-     * @throws CollectionHasKey
-     * @throws BadCollectionType
-     */
     public function testCanAddProviders(): void
     {
         $providers = $this->nebula->getProviders();
@@ -45,10 +36,6 @@ class ApplicationTest extends TestCase
         $this->assertArrayHasKey(get_class($provider), $providers);
     }
 
-    /**
-     * @throws CollectionHasKey
-     * @throws BadCollectionType
-     */
     public function testApplicationCallProvider(): void
     {
         /** @var Provider|MockObject $provider */
@@ -59,8 +46,6 @@ class ApplicationTest extends TestCase
     }
 
     /**
-     * @throws CollectionHasKey
-     * @throws BadCollectionType
      * @throws AnotherInjectionExists
      */
     public function testRegisterStatesFromProvider(): void

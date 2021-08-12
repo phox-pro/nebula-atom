@@ -3,14 +3,11 @@
 namespace Tests\Unit;
 
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
-use stdClass;
-use Exception;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\Exceptions\MustExtends;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
+use Phox\Structures\Collection;
 
 class StatesTest extends TestCase 
 {
@@ -28,7 +25,7 @@ class StatesTest extends TestCase
 
         $this->stateContainer->add($mock);
 
-        $this->assertTrue($this->stateContainer->getRoot()->has($mock));
+        $this->assertTrue($this->stateContainer->getRoot()->contains($mock));
     }
 
     public function testStateExistsError(): void
@@ -53,13 +50,13 @@ class StatesTest extends TestCase
 
         $rootStates = $this->stateContainer->getRoot();
 
-        $this->assertTrue($rootStates->has($mock));
-        $this->assertFalse($rootStates->has($child));
+        $this->assertTrue($rootStates->contains($mock));
+        $this->assertFalse($rootStates->contains($child));
 
         $children = $this->stateContainer->getChildren($mock::class);
 
         $this->assertInstanceOf(Collection::class, $children);
-        $this->assertTrue($children->has($child));
+        $this->assertTrue($children->contains($child));
     }
 
     public function testStatesAsEvents(): void

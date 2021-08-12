@@ -19,11 +19,11 @@ class EventsTest extends TestCase
         /** @var callable $listener */
         $listener = [$mock, 'test'];
 
-        $this->assertTrue($event->getListeners()->empty());
+        $this->assertTrue($event->getListeners()->isEmpty());
 
         $event->listen($listener);
 
-        $this->assertFalse($event->getListeners()->empty());
+        $this->assertFalse($event->getListeners()->isEmpty());
         $this->assertEquals(1, $event->getListeners()->count());
         $this->assertEquals($listener, $event->getListeners()->first());
 

@@ -2,11 +2,11 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
-use Phox\Nebula\Atom\Implementation\Basics\ObjectCollection;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateNotExists;
+use Phox\Structures\ObjectCollection;
 
 class StateContainer implements IStateContainer 
 {
@@ -29,12 +29,11 @@ class StateContainer implements IStateContainer
 
     public function getChildren(string $parentClass): ObjectCollection
     {
-        return $this->children->get($parentClass) ?? new ObjectCollection(State::class);
+        return $this->children->tryGet($parentClass) ?? new ObjectCollection(State::class);
     }
 
     /**
      * @param State $state
-     * @throws Exceptions\BadCollectionType
      * @throws StateExistsException
      */
     public function add(State $state): void
@@ -47,23 +46,21 @@ class StateContainer implements IStateContainer
     }
 
     /**
-     * @throws Exceptions\CollectionHasKey
-     * @throws Exceptions\BadCollectionType
      * @throws StateNotExists
      */
     public function addAfter(State $state, string $parentClass): void
     {
-        if (!$this->root->hasClass($parentClass)) {
+        if (!$this->root->hasObjectClass($parentClass)) {
             throw new StateNotExists($parentClass);
         }
 
         foreach ($this->children as $children) {
-            if (!$children->hasClass($parentClass)) {
+            if (!$children->hasObjectClass($parentClass)) {
                 throw new StateNotExists($parentClass);
             }
         }
 
-        $this->children->hasIndex($parentClass) ?: $this->children->set($parentClass, new ObjectCollection(State::class));
+        $this->children->has($parentClass) ?: $this->children->set($parentClass, new ObjectCollection(State::class));
         $this->children->get($parentClass)->add($state);
     }
 

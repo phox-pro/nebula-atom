@@ -2,10 +2,9 @@
 
 namespace Phox\Nebula\Atom\Notion\Abstracts;
 
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
-use Phox\Nebula\Atom\Implementation\Exceptions\BadCollectionType;
 use Phox\Nebula\Atom\Implementation\Functions;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
+use Phox\Structures\Collection;
 
 abstract class Event implements IEvent
 {
@@ -17,12 +16,9 @@ abstract class Event implements IEvent
         $this->listeners = new Collection('callable');
     }
 
-    /**
-     * @throws BadCollectionType
-     */
     public function listen(callable $listener): void
     {
-        if (!$this->listeners->has($listener)) {
+        if (!$this->listeners->contains($listener)) {
             $this->listeners->add($listener);
         }
     }

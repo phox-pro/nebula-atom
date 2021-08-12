@@ -3,21 +3,23 @@
 namespace Phox\Nebula\Atom\Implementation;
 
 use Phox\Nebula\Atom\AtomProvider;
-use Phox\Nebula\Atom\Implementation\Basics\ObjectCollection;
+use Phox\Nebula\Atom\Implementation\Events\ApplicationCompletedEvent;
 use Phox\Nebula\Atom\Implementation\Events\ApplicationInitEvent;
-use Phox\Nebula\Atom\Implementation\Exceptions\BadCollectionType;
 use Phox\Nebula\Atom\Notion\Abstracts\Provider;
-use Phox\Nebula\Atom\Implementation\Basics\Collection;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Structures\ObjectCollection;
 
 class Application 
 {
     public const GLOBALS_KEY = 'nebulaApplicationInstance';
 
     public IDependencyInjection $dependencyInjection;
+
+    // Events
     public ApplicationInitEvent $eInit;
+    public ApplicationCompletedEvent $eCompleted;
 
     /**
      * @var ObjectCollection<Provider>
@@ -26,13 +28,14 @@ class Application
 
     /**
      * @throws Exceptions\AnotherInjectionExists
-     * @throws BadCollectionType|Exceptions\CollectionHasKey
      */
     public function __construct()
 	{
 	    $this->dependencyInjection = new ServiceContainer();
 	    $this->dependencyInjection->singleton($this);
 	    $this->dependencyInjection->singleton(new StateContainer(), IStateContainer::class);
+
+	    $this->initEvents();
 
         $this->providers = new ObjectCollection(Provider::class);
         $this->addProvider(new AtomProvider());
@@ -55,8 +58,6 @@ class Application
      *
      * @param Provider $provider
      * @return void
-     * @throws Exceptions\BadCollectionType
-     * @throws Exceptions\CollectionHasKey
      */
     public function addProvider(Provider $provider): void
     {
@@ -83,6 +84,8 @@ class Application
      */
     protected function enrichment(): void
     {
+        $this->eInit->notify();
+
         /** @var IStateContainer $stateContainer */
         $stateContainer = $this->dependencyInjection->get(IStateContainer::class);
         $root = $stateContainer->getRoot();
@@ -93,6 +96,8 @@ class Application
 
             $previous = $state;
         }
+
+        $this->eCompleted->notify();
     }
 
     /**
@@ -114,5 +119,11 @@ class Application
 
             $previous = $child;
         }
+    }
+
+    protected function initEvents(): void
+    {
+        $this->eInit = new ApplicationInitEvent();
+        $this->eCompleted = new ApplicationCompletedEvent();
     }
 }

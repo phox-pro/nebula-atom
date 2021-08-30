@@ -145,4 +145,13 @@ class ServiceContainerTest extends TestCase
 
         $this->assertEquals("Work!", $this->container()->call($object));
     }
+
+    public function testCallUnionTypes(): void
+    {
+        $callable = fn (int|string|IDependencyInjection $param = 'hello') => $param;
+
+        $result = $this->container()->call($callable);
+
+        $this->assertInstanceOf(IDependencyInjection::class, $result);
+    }
 }

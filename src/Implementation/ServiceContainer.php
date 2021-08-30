@@ -4,15 +4,15 @@ namespace Phox\Nebula\Atom\Implementation;
 
 use Closure;
 use ReflectionClass;
-use ReflectionException;
 use ReflectionMethod;
 use ReflectionFunction;
+use ReflectionNamedType;
 use ReflectionParameter;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
-use Phox\Nebula\Atom\Implementation\Exceptions\NonStaticCall;
 use Phox\Nebula\Atom\Implementation\Exceptions\DependencyNotFound;
 use Phox\Nebula\Atom\Implementation\Exceptions\AnotherInjectionExists;
 use Phox\Nebula\Atom\Implementation\Exceptions\BadParamsToDependencyInjection;
+use ReflectionUnionType;
 
 class ServiceContainer implements IDependencyInjection 
 {
@@ -137,18 +137,61 @@ class ServiceContainer implements IDependencyInjection
         return $arguments;
     }
 
+    /**
+     * @throws BadParamsToDependencyInjection
+     * @throws DependencyNotFound
+     */
     protected function makeArgument(ReflectionParameter $param): mixed
     {
-        return ($class = $param->getClass())
-            ? $this->makeArgumentObject($param, $class->getName())
-            : $this->makeArgumentDefault($param);
+        $type = $param->getType();
+
+        if (is_null($type)) {
+            return $this->makeArgumentDefault($param);
+        }
+
+        return $type instanceof ReflectionNamedType
+            ? $this->makeNamedArgument($param, $type)
+            : $this->makeUnionTypeArgument($param, $type);
     }
 
+    /**
+     * @throws BadParamsToDependencyInjection
+     * @throws DependencyNotFound
+     */
+    protected function makeUnionTypeArgument(ReflectionParameter $param, ReflectionUnionType $type): mixed
+    {
+        $types = $type->getTypes();
+        $value = null;
+        $lastException = null;
+
+        foreach ($types as $type) {
+            try {
+                $value = $this->makeNamedArgument($param, $type);
+
+                if (!is_null($value)) {
+                    return $value;
+                }
+            } catch (BadParamsToDependencyInjection|DependencyNotFound $exception) {
+                $lastException = $exception;
+            }
+        }
+
+        return is_null($lastException)
+            ? $value
+            : throw $lastException;
+    }
+
+    /**
+     * @throws DependencyNotFound
+     */
     protected function makeArgumentObject(ReflectionParameter $param, string $class) : ?object
     {
         return $this->get($class) ?? ($param->allowsNull() ? null : throw new DependencyNotFound($class));
     }
 
+    /**
+     * @throws BadParamsToDependencyInjection
+     */
     protected function makeArgumentDefault(ReflectionParameter $param): mixed
     {
         if ($param->allowsNull()) {
@@ -164,5 +207,16 @@ class ServiceContainer implements IDependencyInjection
         }
 
         throw new BadParamsToDependencyInjection($param->getDeclaringFunction()->getName(), $param);
+    }
+
+    /**
+     * @throws BadParamsToDependencyInjection
+     * @throws DependencyNotFound
+     */
+    protected function makeNamedArgument(ReflectionParameter $param, ReflectionNamedType $namedType): mixed
+    {
+        return $namedType->isBuiltin()
+            ? $this->makeArgumentDefault($param)
+            : $this->makeArgumentObject($param, $namedType->getName());
     }
 }

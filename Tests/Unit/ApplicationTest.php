@@ -7,13 +7,14 @@ use Phox\Nebula\Atom\Implementation\Events\ApplicationCompletedEvent;
 use Phox\Nebula\Atom\Implementation\Events\ApplicationInitEvent;
 use Phox\Nebula\Atom\Implementation\Exceptions\AnotherInjectionExists;
 use Phox\Nebula\Atom\Implementation\Functions;
+use Phox\Nebula\Atom\Implementation\ProvidersContainer;
+use Phox\Nebula\Atom\Implementation\StateContainer;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Implementation\Application;
 use Phox\Nebula\Atom\Notion\Abstracts\Provider;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
-use Phox\Structures\ObjectCollection;
+use Phox\Structures\ListedObjectCollection;
 use PHPUnit\Framework\MockObject\MockObject;
 use stdClass;
 
@@ -28,16 +29,17 @@ class ApplicationTest extends TestCase
 
     public function testCanAddProviders(): void
     {
-        $providers = $this->nebula->getProviders();
+        $providersContainer = $this->container()->get(ProvidersContainer::class);
+        $providers = $providersContainer->getProviders();
 
-        $this->assertInstanceOf(ObjectCollection::class, $providers);
+        $this->assertInstanceOf(ListedObjectCollection::class, $providers);
         $this->assertEquals(1, $providers->count());
         $this->assertInstanceOf(AtomProvider::class, $providers->first());
 
         $provider = new class extends Provider {};
-        $this->nebula->addProvider($provider);
+        $providersContainer->addProvider($provider);
 
-        $this->assertArrayHasKey(get_class($provider), $providers);
+        $this->assertTrue($providers->contains($provider));
     }
 
     public function testApplicationCallProvider(): void
@@ -46,7 +48,7 @@ class ApplicationTest extends TestCase
         $provider = $this->getMockBuilder(Provider::class)->addMethods(['__invoke'])->getMock();
         $provider->expects($this->once())->method('__invoke');
 
-        $this->nebula->addProvider($provider);
+        $this->container()->get(ProvidersContainer::class)->addProvider($provider);
     }
 
     /**
@@ -60,13 +62,13 @@ class ApplicationTest extends TestCase
         $provider = new class($state) extends Provider {
             public function __construct(private State $state) {}
 
-            public function __invoke(IStateContainer $stateContainer)
+            public function __invoke(StateContainer $stateContainer)
             {
                 $stateContainer->add($this->state);
             }
         };
 
-        $this->nebula->addProvider($provider);
+        $this->container()->get(ProvidersContainer::class)->addProvider($provider);
         $this->nebula->run();
     }
 

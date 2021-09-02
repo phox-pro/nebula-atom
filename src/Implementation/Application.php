@@ -5,11 +5,8 @@ namespace Phox\Nebula\Atom\Implementation;
 use Phox\Nebula\Atom\AtomProvider;
 use Phox\Nebula\Atom\Implementation\Events\ApplicationCompletedEvent;
 use Phox\Nebula\Atom\Implementation\Events\ApplicationInitEvent;
-use Phox\Nebula\Atom\Notion\Abstracts\Provider;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
-use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
-use Phox\Structures\ObjectCollection;
 
 class Application 
 {
@@ -22,50 +19,23 @@ class Application
     public ApplicationCompletedEvent $eCompleted;
 
     /**
-     * @var ObjectCollection<Provider>
-     */
-    protected ObjectCollection $providers;
-
-    /**
      * @throws Exceptions\AnotherInjectionExists
      */
     public function __construct()
 	{
+        $GLOBALS[static::GLOBALS_KEY] = fn(): ?Application => $this->dependencyInjection->get(self::class);
+
 	    $this->dependencyInjection = new ServiceContainer();
+
 	    $this->dependencyInjection->singleton($this);
-	    $this->dependencyInjection->singleton(new StateContainer(), IStateContainer::class);
+	    $this->dependencyInjection->singleton(new StateContainer());
 
 	    $this->initEvents();
 
-        $this->providers = new ObjectCollection(Provider::class);
-        $this->addProvider(new AtomProvider());
+        $providers = new ProvidersContainer();
+        $providers->addProvider(new AtomProvider());
 
-        $GLOBALS[static::GLOBALS_KEY] = fn(): ?Application => $this->dependencyInjection->get(self::class);
-    }
-
-    /**
-     * Get all application providers
-     *
-     * @return ObjectCollection<Provider>
-     */
-    public function getProviders() : ObjectCollection
-    {
-        return $this->providers;
-    }
-
-    /**
-     * Add provider to application
-     *
-     * @param Provider $provider
-     * @return void
-     */
-    public function addProvider(Provider $provider): void
-    {
-        $this->providers->set(get_class($provider), $provider);
-
-        if (is_callable($provider)) {
-            $this->dependencyInjection->call($provider);
-        }
+        $this->dependencyInjection->singleton($providers);
     }
 
     /**
@@ -86,8 +56,7 @@ class Application
     {
         $this->eInit->notify();
 
-        /** @var IStateContainer $stateContainer */
-        $stateContainer = $this->dependencyInjection->get(IStateContainer::class);
+        $stateContainer = $this->dependencyInjection->get(StateContainer::class);
         $root = $stateContainer->getRoot();
 
         foreach ($root as $state) {
@@ -105,8 +74,7 @@ class Application
      */
     protected function callState(State $state)
     {
-        /** @var IStateContainer $stateContainer */
-        $stateContainer = $this->dependencyInjection->get(IStateContainer::class);
+        $stateContainer = $this->dependencyInjection->get(StateContainer::class);
         $this->dependencyInjection->singleton($state, State::class);
 
         $state->notify();

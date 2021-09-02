@@ -11,9 +11,9 @@ interface IDependencyInjection
      * @param T|class-string<T> $object Instance or Class for registration
      * @param class-string<T>|null $dependency Full name of dependency <class, interface>
      *
-     * @return T|null Old singleton if exists
+     * @return T|class-string<T>|null Old singleton if exists
      */
-    public function singleton(object|string $object, ?string $dependency = null): ?object;
+    public function singleton(object|string $object, ?string $dependency = null): object|string|null;
 
     /**
      * Add dependency injection as transient

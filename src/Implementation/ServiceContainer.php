@@ -33,7 +33,7 @@ class ServiceContainer implements IDependencyInjection
         return $this;
     }
 
-    public function singleton(object|string $object, ?string $dependency = null): ?object
+    public function singleton(object|string $object, ?string $dependency = null): object|string|null
     {
         $dependency ??= is_object($object) ? get_class($object) : $object;
         if (array_key_exists($dependency, $this->transients)) {

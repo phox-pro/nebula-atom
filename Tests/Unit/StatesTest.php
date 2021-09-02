@@ -2,21 +2,22 @@
 
 namespace Tests\Unit;
 
+use Phox\Nebula\Atom\Implementation\StateContainer;
+use Phox\Nebula\Atom\Implementation\States\InitState;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Structures\Collection;
 
 class StatesTest extends TestCase 
 {
-    protected IStateContainer $stateContainer;
+    protected StateContainer $stateContainer;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->stateContainer = $this->container()->get(IStateContainer::class);
+        $this->stateContainer = $this->container()->get(StateContainer::class);
     }
 
     public function testAddMethod(): void
@@ -33,6 +34,26 @@ class StatesTest extends TestCase
         $mock = $this->createMock(State::class);
 
         $this->stateContainer->add($mock);
+
+        $this->expectException(StateExistsException::class);
+        $this->stateContainer->add($mock);
+    }
+
+    public function testStateExistsAtChildren(): void
+    {
+        $mock = $this->createMock(State::class);
+
+        $this->stateContainer->addAfter($mock, InitState::class);
+
+        $this->expectException(StateExistsException::class);
+        $this->stateContainer->addAfter($mock, InitState::class);
+    }
+
+    public function testStateExistsAtChildrenForRoot(): void
+    {
+        $mock = $this->createMock(State::class);
+
+        $this->stateContainer->addAfter($mock, InitState::class);
 
         $this->expectException(StateExistsException::class);
         $this->stateContainer->add($mock);
@@ -64,5 +85,25 @@ class StatesTest extends TestCase
         $state = $this->createMock(State::class);
 
         $this->assertTrue($state instanceof IEvent);
+    }
+
+    public function testRegisterStatesByEvent(): void
+    {
+        $mock = $this->createMock(State::class);
+        $child = $this->getMockBuilder(State::class)
+            ->setMockClassName($mock::class . '_child')
+            ->getMock();
+
+        $this->stateContainer->eStateRegistered->listen(function (State $state, StateContainer $container) use ($mock, $child) {
+            if ($state instanceof $mock) {
+                $container->addAfter($child, $mock::class);
+            }
+        });
+
+        $this->assertNull($this->stateContainer->getState($child::class));
+
+        $this->stateContainer->add($mock);
+
+        $this->assertNotNull($this->stateContainer->getState($child::class));
     }
 }

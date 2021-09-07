@@ -24,13 +24,12 @@ class Application
     public function __construct()
 	{
         $GLOBALS[static::GLOBALS_KEY] = fn(): ?Application => $this->dependencyInjection->get(self::class);
+        $this->initEvents();
 
 	    $this->dependencyInjection = new ServiceContainer();
 
 	    $this->dependencyInjection->singleton($this);
 	    $this->dependencyInjection->singleton(new StateContainer());
-
-	    $this->initEvents();
 
         $providers = new ProvidersContainer();
         $providers->addProvider(new AtomProvider());

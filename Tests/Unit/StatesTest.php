@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use Phox\Nebula\Atom\Implementation\Exceptions\AnotherInjectionExists;
 use Phox\Nebula\Atom\Implementation\StateContainer;
 use Phox\Nebula\Atom\Implementation\States\InitState;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
@@ -9,6 +10,7 @@ use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Structures\Collection;
+use stdClass;
 
 class StatesTest extends TestCase 
 {
@@ -105,5 +107,38 @@ class StatesTest extends TestCase
         $this->stateContainer->add($mock);
 
         $this->assertNotNull($this->stateContainer->getState($child::class));
+    }
+
+    public function testLazyAddAfterMethod(): void
+    {
+        $mock = $this->createMock(State::class);
+        $child = $this->getMockBuilder(State::class)
+            ->setMockClassName($mock::class . '_child')
+            ->getMock();
+
+        $this->stateContainer->addAfter($child, $mock::class);
+
+        $this->assertNull($this->stateContainer->getState($child::class));
+
+        $this->stateContainer->add($mock);
+
+        $this->assertNotNull($this->stateContainer->getState($child::class));
+    }
+
+    public function testFallbackAtAddAfterMethod(): void
+    {
+        $mock = $this->createMock(State::class);
+        $child = $this->getMockBuilder(State::class)
+            ->setMockClassName($mock::class . '_child')
+            ->getMock();
+
+        $fallbackMock = $this->getMockBuilder(stdClass::class)
+            ->addMethods(['testFallback'])
+            ->getMock();
+        $fallbackMock->expects($this->once())->method('testFallback');
+
+        $this->stateContainer->addAfter($child, $mock::class, [$fallbackMock, 'testFallback']);
+
+        $this->nebula->run();
     }
 }

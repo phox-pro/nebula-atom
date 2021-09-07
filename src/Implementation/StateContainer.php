@@ -5,7 +5,7 @@ namespace Phox\Nebula\Atom\Implementation;
 use Phox\Nebula\Atom\Implementation\Events\StateRegisteredEvent;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Implementation\Exceptions\StateNotExists;
+use Phox\Structures\Collection;
 use Phox\Structures\ObjectCollection;
 
 class StateContainer
@@ -18,12 +18,30 @@ class StateContainer
     /** @var ObjectCollection<ObjectCollection<State>> */
     protected ObjectCollection $children;
 
+    /** @var Collection<Collection<callable>> */
+    protected Collection $fallbacks;
+
     public function __construct()
     {
         $this->root = new ObjectCollection(State::class);
         $this->children = new ObjectCollection(ObjectCollection::class);
+        $this->fallbacks = new Collection(Collection::class);
 
         $this->eStateRegistered = new StateRegisteredEvent();
+
+        $this->eStateRegistered->listen(
+            fn(State $state) => $this->fallbacks->has($state::class)
+                ? $this->fallbacks->remove($state::class)
+                : null
+        );
+
+        Functions::nebula()->eCompleted->listen(function () {
+            foreach ($this->fallbacks as $fallbacks) {
+                foreach ($fallbacks as $stateClass => $fallback) {
+                    Functions::container()->call($fallback, [$stateClass]);
+                }
+            }
+        });
     }
 
     public function getRoot(): ObjectCollection
@@ -52,10 +70,9 @@ class StateContainer
     }
 
     /**
-     * @throws StateNotExists
      * @throws StateExistsException
      */
-    public function addAfter(State $state, string $parentClass): void
+    public function addAfter(State $state, string $parentClass, ?callable $fallback = null): void
     {
         if (!$this->root->hasObjectClass($parentClass)) {
             $found = false;
@@ -67,8 +84,21 @@ class StateContainer
                     break;
                 }
             }
-            
-            $found ?: throw new StateNotExists($parentClass);
+
+            if (!$found) {
+                $this->eStateRegistered->listen(function (State $registeredState) use ($parentClass, $state) {
+                    if ($registeredState instanceof $parentClass) {
+                        $this->addAfter($state, $parentClass);
+                    }
+                });
+
+                if (!is_null($fallback)) {
+                    $this->fallbacks->has($parentClass) ?: $this->fallbacks->set($parentClass, new Collection('callable'));
+                    $this->fallbacks->get($parentClass)->add($fallback);
+                }
+
+                return;
+            }
         }
 
         if (!is_null($this->getState($state::class))) {

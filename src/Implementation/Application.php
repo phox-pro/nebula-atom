@@ -3,35 +3,27 @@
 namespace Phox\Nebula\Atom\Implementation;
 
 use Phox\Nebula\Atom\AtomProvider;
-use Phox\Nebula\Atom\Implementation\Events\ApplicationCompletedEvent;
-use Phox\Nebula\Atom\Implementation\Events\ApplicationInitEvent;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
+use Phox\Nebula\Atom\Notion\Interfaces\IEventManager;
+use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 
 class Application 
 {
-    public const GLOBALS_KEY = 'nebulaApplicationInstance';
-
-    public IDependencyInjection $dependencyInjection;
+    protected IDependencyInjection $dependencyInjection;
 
     // Events
-    public ApplicationInitEvent $eInit;
-    public ApplicationCompletedEvent $eCompleted;
+    public BasicEvent $eInit;
+    public BasicEvent $eCompleted;
 
     /**
      * @throws Exceptions\AnotherInjectionExists
      */
     public function __construct()
 	{
-        $GLOBALS[static::GLOBALS_KEY] = fn(): ?Application => $this->dependencyInjection->get(self::class);
-        $this->initEvents();
+        $this->initDIContainer();
 
-	    $this->dependencyInjection = new ServiceContainer();
-
-	    $this->dependencyInjection->singleton($this);
-	    $this->dependencyInjection->singleton(new StateContainer());
-
-        $providers = new ProvidersContainer();
+        $providers = $this->dependencyInjection->make(ProvidersContainer::class);
         $providers->addProvider(new AtomProvider());
 
         $this->dependencyInjection->singleton($providers);
@@ -48,14 +40,21 @@ class Application
        $this->enrichment(); 
     }
 
+    public function getDIContainer(): IDependencyInjection
+    {
+        return $this->dependencyInjection->get(IDependencyInjection::class);
+    }
+
     /**
      * @throws Exceptions\AnotherInjectionExists
      */
     protected function enrichment(): void
     {
-        $this->eInit->notify();
+        $eventManager = $this->getDIContainer()->get(IEventManager::class);
+        $eventManager->notify($this->eInit);
+        $dependencyInjection = $this->dependencyInjection->get(IDependencyInjection::class);
 
-        $stateContainer = $this->dependencyInjection->get(StateContainer::class);
+        $stateContainer = $dependencyInjection->get(IStateContainer::class);
         $root = $stateContainer->getRoot();
 
         foreach ($root as $state) {
@@ -65,18 +64,21 @@ class Application
             $previous = $state;
         }
 
-        $this->eCompleted->notify();
+        $eventManager->notify($this->eCompleted);
     }
 
     /**
      * @throws Exceptions\AnotherInjectionExists
      */
-    protected function callState(State $state)
+    protected function callState(State $state): void
     {
-        $stateContainer = $this->dependencyInjection->get(StateContainer::class);
-        $this->dependencyInjection->singleton($state, State::class);
+        $dependencyInjection = $this->getDIContainer();
+        $eventManager = $dependencyInjection->get(IEventManager::class);
 
-        $state->notify();
+        $stateContainer = $dependencyInjection->get(IStateContainer::class);
+        $dependencyInjection->singleton($state, State::class);
+
+        $eventManager->notify($state);
 
         $children = $stateContainer->getChildren($state::class);
 
@@ -88,9 +90,12 @@ class Application
         }
     }
 
-    protected function initEvents(): void
+    /**
+     * @throws Exceptions\AnotherInjectionExists
+     */
+    protected function initDIContainer(): void
     {
-        $this->eInit = new ApplicationInitEvent();
-        $this->eCompleted = new ApplicationCompletedEvent();
+        $this->dependencyInjection = new ServiceContainer();
+        $this->dependencyInjection->singleton($this);
     }
 }

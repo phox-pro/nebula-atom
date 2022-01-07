@@ -2,46 +2,44 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
-use Phox\Nebula\Atom\Implementation\Events\StateRegisteredEvent;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
+use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
+use Phox\Nebula\Atom\Notion\Interfaces\IEventManager;
+use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Phox\Structures\Abstracts\Type;
+use Phox\Structures\AssociativeObjectCollection;
 use Phox\Structures\Collection;
 use Phox\Structures\ObjectCollection;
 
-class StateContainer
+class StateContainer implements IStateContainer
 {
     public StateRegisteredEvent $eStateRegistered;
 
     /** @var ObjectCollection<State> */
     protected ObjectCollection $root;
 
-    /** @var ObjectCollection<ObjectCollection<State>> */
-    protected ObjectCollection $children;
+    /** @var AssociativeObjectCollection<ObjectCollection> */
+    protected AssociativeObjectCollection $children;
 
-    /** @var Collection<Collection<callable>> */
-    protected Collection $fallbacks;
+    /** @var AssociativeObjectCollection<Collection<callable>> */
+    protected AssociativeObjectCollection $fallbacks;
 
-    public function __construct()
+    public function __construct(protected IEventManager $eventManager)
     {
-        $this->root = new ObjectCollection(State::class);
-        $this->children = new ObjectCollection(ObjectCollection::class);
-        $this->fallbacks = new Collection(Collection::class);
+        $this->root = new ObjectCollection(type(State::class));
+        $this->children = new AssociativeObjectCollection(type(ObjectCollection::class));
+        $this->fallbacks = new AssociativeObjectCollection(type(Collection::class));
 
         $this->eStateRegistered = new StateRegisteredEvent();
 
         $this->eStateRegistered->listen(
-            fn(State $state) => $this->fallbacks->has($state::class)
-                ? $this->fallbacks->remove($state::class)
-                : null
-        );
-
-        Functions::nebula()->eCompleted->listen(function () {
-            foreach ($this->fallbacks as $fallbacks) {
-                foreach ($fallbacks as $stateClass => $fallback) {
-                    Functions::container()->call($fallback, [$stateClass]);
+            function (IEvent $state): void {
+                if ($this->fallbacks->has($state::class)) {
+                    $this->fallbacks->remove($state::class);
                 }
             }
-        });
+        );
     }
 
     public function getRoot(): ObjectCollection
@@ -51,7 +49,7 @@ class StateContainer
 
     public function getChildren(string $parentClass): ObjectCollection
     {
-        return $this->children->tryGet($parentClass) ?? new ObjectCollection(State::class);
+        return $this->children->tryGet($parentClass) ?? new ObjectCollection(type(State::class));
     }
 
     /**
@@ -66,7 +64,11 @@ class StateContainer
 
         $this->root->add($state);
 
-        $this->eStateRegistered->notify($state);
+        $this->eStateRegistered->setState($state);
+
+        $this->eventManager->notify($this->eStateRegistered);
+
+        $this->eStateRegistered->setState(null);
     }
 
     /**
@@ -86,14 +88,16 @@ class StateContainer
             }
 
             if (!$found) {
-                $this->eStateRegistered->listen(function (State $registeredState) use ($parentClass, $state) {
+                $this->eStateRegistered->listen(function (StateRegisteredEvent $event) use ($parentClass, $state) {
+                    $registeredState = $event->getState();
+
                     if ($registeredState instanceof $parentClass) {
                         $this->addAfter($state, $parentClass);
                     }
                 });
 
                 if (!is_null($fallback)) {
-                    $this->fallbacks->has($parentClass) ?: $this->fallbacks->set($parentClass, new Collection('callable'));
+                    $this->fallbacks->has($parentClass) ?: $this->fallbacks->set($parentClass, new Collection(Type::CALLABLE));
                     $this->fallbacks->get($parentClass)->add($fallback);
                 }
 
@@ -105,10 +109,10 @@ class StateContainer
             throw new StateExistsException($state::class);
         }
 
-        $this->children->has($parentClass) ?: $this->children->set($parentClass, new ObjectCollection(State::class));
+        $this->children->has($parentClass) ?: $this->children->set($parentClass, new ObjectCollection(type(State::class)));
         $this->children->get($parentClass)->add($state);
 
-        $this->eStateRegistered->notify($state);
+        $this->eventManager->notify($state);
     }
 
     public function getState(string $state): ?State
@@ -128,5 +132,10 @@ class StateContainer
         }
 
         return null;
+    }
+
+    public function getFallbacks(): AssociativeObjectCollection
+    {
+        return $this->fallbacks;
     }
 }

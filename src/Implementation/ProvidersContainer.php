@@ -3,18 +3,24 @@
 namespace Phox\Nebula\Atom\Implementation;
 
 use Phox\Nebula\Atom\Notion\Abstracts\Provider;
-use Phox\Structures\ListedObjectCollection;
+use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
+use Phox\Structures\Abstracts\ObjectType;
+use Phox\Structures\ObjectCollection;
 
 class ProvidersContainer
 {
-    protected ListedObjectCollection $providers;
+    /** @var ObjectCollection<Provider> */
+    protected ObjectCollection $providers;
 
-    public function __construct()
+    public function __construct(protected IDependencyInjection $dependencyInjection)
     {
-        $this->providers = new ListedObjectCollection(Provider::class);
+        $this->providers = new ObjectCollection(ObjectType::fromClass(Provider::class));
     }
 
-    public function getProviders(): ListedObjectCollection
+    /**
+     * @return ObjectCollection<Provider>
+     */
+    public function getProviders(): ObjectCollection
     {
         return $this->providers;
     }
@@ -28,7 +34,7 @@ class ProvidersContainer
         $this->providers->add($provider);
 
         if (is_callable($provider)) {
-            Functions::container()->call($provider);
+            $this->dependencyInjection->call($provider);
         }
     }
 }

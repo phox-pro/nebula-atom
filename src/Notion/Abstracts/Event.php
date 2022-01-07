@@ -2,8 +2,9 @@
 
 namespace Phox\Nebula\Atom\Notion\Abstracts;
 
-use Phox\Nebula\Atom\Implementation\Functions;
+use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
+use Phox\Structures\Abstracts\Type;
 use Phox\Structures\Collection;
 
 abstract class Event implements IEvent
@@ -13,7 +14,7 @@ abstract class Event implements IEvent
 
     public function __construct()
     {
-        $this->listeners = new Collection('callable');
+        $this->listeners = new Collection(Type::CALLABLE);
     }
 
     public function listen(callable $listener): void
@@ -21,22 +22,6 @@ abstract class Event implements IEvent
         if (!$this->listeners->contains($listener)) {
             $this->listeners->add($listener);
         }
-    }
-
-    public function notify(...$params): void
-    {
-        $this->notifyRaw($params);
-    }
-
-    public function notifyRaw(array $params = []): void
-    {
-        Functions::container()->singleton($this, IEvent::class);
-
-        foreach ($this->listeners as $listener) {
-            Functions::container()->call($listener, $params);
-        }
-
-        Functions::container()->deleteDependency(IEvent::class);
     }
 
     public function getListeners() : Collection

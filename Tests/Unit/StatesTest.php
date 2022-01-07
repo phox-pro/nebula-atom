@@ -4,8 +4,10 @@ namespace Tests\Unit;
 
 use Phox\Nebula\Atom\Implementation\Exceptions\AnotherInjectionExists;
 use Phox\Nebula\Atom\Implementation\StateContainer;
+use Phox\Nebula\Atom\Implementation\StateRegisteredEvent;
 use Phox\Nebula\Atom\Implementation\States\InitState;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
+use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
@@ -19,7 +21,7 @@ class StatesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->stateContainer = $this->container()->get(StateContainer::class);
+        $this->stateContainer = $this->container()->get(IStateContainer::class);
     }
 
     public function testAddMethod(): void
@@ -66,6 +68,7 @@ class StatesTest extends TestCase
         $mock = $this->createMock(State::class);
         $child = $this->getMockBuilder(State::class)
             ->setMockClassName($mock::class . '_child')
+            ->setConstructorArgs([$this->container()])
             ->getMock();
 
         $this->stateContainer->add($mock);
@@ -94,9 +97,12 @@ class StatesTest extends TestCase
         $mock = $this->createMock(State::class);
         $child = $this->getMockBuilder(State::class)
             ->setMockClassName($mock::class . '_child')
+            ->setConstructorArgs([$this->container()])
             ->getMock();
 
-        $this->stateContainer->eStateRegistered->listen(function (State $state, StateContainer $container) use ($mock, $child) {
+        $this->stateContainer->eStateRegistered->listen(function (StateRegisteredEvent $event, IStateContainer $container) use ($mock, $child) {
+            $state = $event->getState();
+
             if ($state instanceof $mock) {
                 $container->addAfter($child, $mock::class);
             }
@@ -114,6 +120,7 @@ class StatesTest extends TestCase
         $mock = $this->createMock(State::class);
         $child = $this->getMockBuilder(State::class)
             ->setMockClassName($mock::class . '_child')
+            ->setConstructorArgs([$this->container()])
             ->getMock();
 
         $this->stateContainer->addAfter($child, $mock::class);
@@ -130,6 +137,7 @@ class StatesTest extends TestCase
         $mock = $this->createMock(State::class);
         $child = $this->getMockBuilder(State::class)
             ->setMockClassName($mock::class . '_child')
+            ->setConstructorArgs([$this->container()])
             ->getMock();
 
         $fallbackMock = $this->getMockBuilder(stdClass::class)

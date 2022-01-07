@@ -2,8 +2,7 @@
 
 namespace Tests\Unit;
 
-use Phox\Nebula\Atom\Implementation\Application;
-use Phox\Nebula\Atom\Implementation\Functions;
+use Phox\Structures\Abstracts\Type;
 use stdClass;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Implementation\ServiceContainer;
@@ -26,7 +25,7 @@ class ServiceContainerTest extends TestCase
 
     public function testInitDI(): void
     {
-        $result = Functions::container();
+        $result = $this->nebula->getDIContainer();
 
         $this->assertInstanceOf(IDependencyInjection::class, $result);
         $this->assertInstanceOf(ServiceContainer::class, $result);
@@ -153,5 +152,21 @@ class ServiceContainerTest extends TestCase
         $result = $this->container()->call($callable);
 
         $this->assertInstanceOf(IDependencyInjection::class, $result);
+    }
+
+    public function testEnumAsSingleton(): void
+    {
+        $expected = Type::ARRAY;
+        $this->container()->singleton($expected);
+
+        $this->assertIsSingleton($expected);
+        $this->assertEquals($expected, $this->container()->get(Type::class));
+    }
+
+    public function testEnumAsDependency(): void
+    {
+        $this->expectError();
+
+        $this->container()->call(fn (Type $type): bool => true);
     }
 }

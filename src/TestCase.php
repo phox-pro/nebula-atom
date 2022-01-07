@@ -2,9 +2,7 @@
 
 namespace Phox\Nebula\Atom;
 
-use LogicException;
 use Phox\Nebula\Atom\Implementation\Application;
-use Phox\Nebula\Atom\Implementation\Functions;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 use PHPUnit\Framework\TestCase as FrameworkTestCase;
 
@@ -21,7 +19,7 @@ class TestCase extends FrameworkTestCase
 
     protected function container(): IDependencyInjection
     {
-        return Functions::container() ?? throw new LogicException();
+        return $this->nebula->getDIContainer();
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
+use Phox\Nebula\Atom\Implementation\Events\StateRegisteredEvent;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
@@ -14,12 +15,12 @@ use Phox\Structures\ObjectCollection;
 
 class StateContainer implements IStateContainer
 {
-    public StateRegisteredEvent $eStateRegistered;
+    public readonly StateRegisteredEvent $eStateRegistered;
 
     /** @var ObjectCollection<State> */
     protected ObjectCollection $root;
 
-    /** @var AssociativeObjectCollection<ObjectCollection> */
+    /** @var AssociativeObjectCollection<ObjectCollection<State>> */
     protected AssociativeObjectCollection $children;
 
     /** @var AssociativeObjectCollection<Collection<callable>> */

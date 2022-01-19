@@ -5,8 +5,8 @@ namespace Tests\Unit;
 use Phox\Nebula\Atom\AtomProvider;
 use Phox\Nebula\Atom\Implementation\BasicEvent;
 use Phox\Nebula\Atom\Implementation\Exceptions\AnotherInjectionExists;
-use Phox\Nebula\Atom\Implementation\ProvidersContainer;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
+use Phox\Nebula\Atom\Notion\Interfaces\IProvidersContainer;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Implementation\Application;
@@ -25,7 +25,7 @@ class ApplicationTest extends TestCase
 
     public function testCanAddProviders(): void
     {
-        $providersContainer = $this->container()->get(ProvidersContainer::class);
+        $providersContainer = $this->container()->get(IProvidersContainer::class);
         $providers = $providersContainer->getProviders();
 
         $this->assertInstanceOf(ObjectCollection::class, $providers);
@@ -44,7 +44,7 @@ class ApplicationTest extends TestCase
         $provider = $this->getMockBuilder(Provider::class)->addMethods(['__invoke'])->getMock();
         $provider->expects($this->once())->method('__invoke');
 
-        $this->container()->get(ProvidersContainer::class)->addProvider($provider);
+        $this->container()->get(IProvidersContainer::class)->addProvider($provider);
     }
 
     /**
@@ -64,7 +64,7 @@ class ApplicationTest extends TestCase
             }
         };
 
-        $this->container()->get(ProvidersContainer::class)->addProvider($provider);
+        $this->container()->get(IProvidersContainer::class)->addProvider($provider);
         $this->nebula->run();
     }
 

@@ -2,30 +2,31 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
-use Phox\Nebula\Atom\Notion\Abstracts\Provider;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
+use Phox\Nebula\Atom\Notion\Interfaces\IProvider;
+use Phox\Nebula\Atom\Notion\Interfaces\IProvidersContainer;
 use Phox\Structures\Abstracts\ObjectType;
 use Phox\Structures\ObjectCollection;
 
-class ProvidersContainer
+class ProvidersContainer implements IProvidersContainer
 {
-    /** @var ObjectCollection<Provider> */
+    /** @var ObjectCollection<IProvider> */
     protected ObjectCollection $providers;
 
     public function __construct(protected IDependencyInjection $dependencyInjection)
     {
-        $this->providers = new ObjectCollection(ObjectType::fromClass(Provider::class));
+        $this->providers = new ObjectCollection(ObjectType::fromClass(IProvider::class));
     }
 
     /**
-     * @return ObjectCollection<Provider>
+     * @return ObjectCollection<IProvider>
      */
     public function getProviders(): ObjectCollection
     {
         return $this->providers;
     }
 
-    public function addProvider(Provider $provider): void
+    public function addProvider(IProvider $provider): void
     {
         if ($this->providers->contains($provider)) {
             return;

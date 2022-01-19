@@ -2,26 +2,31 @@
 
 namespace Tests\Unit;
 
-use Phox\Nebula\Atom\Implementation\Exceptions\AnotherInjectionExists;
+use Phox\Nebula\Atom\Implementation\Events\StateRegisteredEvent;
+use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Nebula\Atom\Implementation\StateContainer;
-use Phox\Nebula\Atom\Implementation\StateRegisteredEvent;
 use Phox\Nebula\Atom\Implementation\States\InitState;
+use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 use Phox\Nebula\Atom\TestCase;
-use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Structures\Collection;
 use stdClass;
 
 class StatesTest extends TestCase 
 {
-    protected StateContainer $stateContainer;
+    protected IStateContainer $stateContainer;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->stateContainer = $this->container()->get(IStateContainer::class);
+    }
+
+    public function testSingletonContainer(): void
+    {
+        $this->assertIsSingleton(IStateContainer::class);
+        $this->assertInstanceOf(StateContainer::class, $this->container()->get(IStateContainer::class));
     }
 
     public function testAddMethod(): void

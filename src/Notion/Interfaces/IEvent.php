@@ -3,6 +3,7 @@
 namespace Phox\Nebula\Atom\Notion\Interfaces;
 
 use Phox\Structures\Collection;
+use Phox\Structures\Interfaces\ICollection;
 
 interface IEvent 
 {
@@ -18,7 +19,7 @@ interface IEvent
     /**
      * Get all listeners
      *
-     * @return Collection<callable>
+     * @return ICollection<callable>
      */
-    public function getListeners() : Collection;
+    public function getListeners() : ICollection;
 }

@@ -2,24 +2,27 @@
 
 namespace Phox\Nebula\Atom\Notion\Interfaces;
 
+use Phox\Nebula\Atom\Implementation\Events\StateRegisteredEvent;
 use Phox\Nebula\Atom\Implementation\Exceptions\StateExistsException;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Structures\AssociativeObjectCollection;
-use Phox\Structures\Collection;
-use Phox\Structures\ObjectCollection;
+use Phox\Structures\Interfaces\IAssociativeArray;
+use Phox\Structures\Interfaces\ICollection;
 
+/**
+ * @property-read StateRegisteredEvent $eStateRegistered
+ */
 interface IStateContainer
 {
     /**
-     * @return ObjectCollection<State>
+     * @return ICollection<State>
      */
-    public function getRoot(): ObjectCollection;
+    public function getRoot(): ICollection;
 
     /**
      * @param string $parentClass
-     * @return ObjectCollection<State>
+     * @return ICollection<State>
      */
-    public function getChildren(string $parentClass): ObjectCollection;
+    public function getChildren(string $parentClass): ICollection;
 
     /**
      * @param State $state
@@ -35,7 +38,7 @@ interface IStateContainer
     public function getState(string $state): ?State;
 
     /**
-     * @return AssociativeObjectCollection<Collection<callable>>
+     * @return IAssociativeArray<callable>&ICollection<callable>
      */
-    public function getFallbacks(): AssociativeObjectCollection;
+    public function getFallbacks(): IAssociativeArray&ICollection;
 }

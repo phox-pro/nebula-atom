@@ -6,6 +6,7 @@ use Phox\Nebula\Atom\AtomProvider;
 use Phox\Nebula\Atom\Notion\Abstracts\State;
 use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
 use Phox\Nebula\Atom\Notion\Interfaces\IEventManager;
+use Phox\Nebula\Atom\Notion\Interfaces\IProvidersContainer;
 use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
 
 class Application 
@@ -26,7 +27,7 @@ class Application
         $providers = $this->dependencyInjection->make(ProvidersContainer::class);
         $providers->addProvider(new AtomProvider());
 
-        $this->dependencyInjection->singleton($providers);
+        $this->dependencyInjection->singleton($providers, IProvidersContainer::class);
     }
 
     /**

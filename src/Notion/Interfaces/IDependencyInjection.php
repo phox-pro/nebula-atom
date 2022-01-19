@@ -7,7 +7,7 @@ interface IDependencyInjection
     /**
      * Add dependency injection as singleton
      *
-     * @template T
+     * @template T as object
      * @param T|class-string<T> $object Instance or Class for registration
      * @param class-string<T>|null $dependency Full name of dependency <class, interface>
      *
@@ -35,7 +35,7 @@ interface IDependencyInjection
     /**
      * Create object with injections
      *
-     * @template T
+     * @template T as object
      * @param class-string<T> $class Full name of class
      * @param array $params Params to set in object constructor
      *
@@ -56,7 +56,7 @@ interface IDependencyInjection
     /**
      * Get instance of expected class from container
      *
-     * @template T
+     * @template T as object
      * @param class-string<T> $class
      *
      * @return ?T

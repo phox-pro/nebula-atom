@@ -1,6 +1,6 @@
 <?php
 
-namespace Phox\Nebula\Atom\Implementation;
+namespace Phox\Nebula\Atom\Implementation\Events;
 
 use Phox\Nebula\Atom\Notion\Abstracts\Event;
 use Phox\Nebula\Atom\Notion\Abstracts\State;

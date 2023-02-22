@@ -1,0 +1,9 @@
+version: "3"
+services:
+  php-cli:
+    working_dir: /app
+    tty: true
+    build:
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app

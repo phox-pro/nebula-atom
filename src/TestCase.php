@@ -2,39 +2,17 @@
 
 namespace Phox\Nebula\Atom;
 
-use LogicException;
-use Phox\Nebula\Atom\Implementation\Application;
-use Phox\Nebula\Atom\Implementation\Functions;
-use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
-use PHPUnit\Framework\TestCase as FrameworkTestCase;
+use Phox\Nebula\Atom\Implementation\Event\Event;
+use Phox\Nebula\Atom\Implementation\Services\ServiceContainerFacade;
+use PHPUnit\Framework\TestCase as ParentTestCase;
 
-class TestCase extends FrameworkTestCase 
+class TestCase extends ParentTestCase
 {
-    protected Application $nebula;
-
     protected function setUp(): void
     {
-        $this->nebula = new Application();
-
         parent::setUp();
-    }
 
-    protected function container(): IDependencyInjection
-    {
-        return Functions::container() ?? throw new LogicException();
-    }
-
-    /**
-     * Assert that object is singleton
-     *
-     * @param string|object $object
-     * @param string $message
-     * @return void
-     */
-    protected function assertIsSingleton(object|string $object, string $message = ''): void
-    {
-        $object = is_object($object) ? $object::class : $object;
-
-        $this->assertSame($this->container()->get($object), $this->container()->get($object), $message);
+        ServiceContainerFacade::instance()?->reset();
+        Event::clearListeners();
     }
 }

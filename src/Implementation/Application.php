@@ -2,128 +2,108 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
-use Phox\Nebula\Atom\AtomProvider;
+use Composer\InstalledVersions;
 use Phox\Nebula\Atom\Implementation\Events\ApplicationCompletedEvent;
 use Phox\Nebula\Atom\Implementation\Events\ApplicationInitEvent;
-use Phox\Nebula\Atom\Notion\Abstracts\Provider;
-use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
-use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
-use Phox\Structures\ObjectCollection;
+use Phox\Nebula\Atom\Implementation\Provider\ProvidersContainer;
+use Phox\Nebula\Atom\Implementation\Services\ServiceContainer;
+use Phox\Nebula\Atom\Implementation\Services\ServiceContainerAccess;
+use Phox\Nebula\Atom\Implementation\Services\ServiceContainerFacade;
+use Phox\Nebula\Atom\Implementation\State\State;
+use Phox\Nebula\Atom\Implementation\State\StateContainer;
+use Phox\Nebula\Atom\Notion\INebulaConfig;
+use Phox\Nebula\Atom\Notion\IProviderContainer;
+use Phox\Nebula\Atom\Notion\IStateContainer;
 
-class Application 
+class Application
 {
-    public const GLOBALS_KEY = 'nebulaApplicationInstance';
+    use ServiceContainerAccess;
 
-    public IDependencyInjection $dependencyInjection;
-
-    // Events
-    public ApplicationInitEvent $eInit;
-    public ApplicationCompletedEvent $eCompleted;
-
-    /**
-     * @var ObjectCollection<Provider>
-     */
-    protected ObjectCollection $providers;
-
-    /**
-     * @throws Exceptions\AnotherInjectionExists
-     */
-    public function __construct()
-	{
-	    $this->dependencyInjection = new ServiceContainer();
-	    $this->dependencyInjection->singleton($this);
-	    $this->dependencyInjection->singleton(new StateContainer(), IStateContainer::class);
-
-	    $this->initEvents();
-
-        $this->providers = new ObjectCollection(Provider::class);
-        $this->addProvider(new AtomProvider());
-
-        $GLOBALS[static::GLOBALS_KEY] = fn(): ?Application => $this->dependencyInjection->get(self::class);
-    }
-
-    /**
-     * Get all application providers
-     *
-     * @return ObjectCollection<Provider>
-     */
-    public function getProviders() : ObjectCollection
+    public function __construct(protected ?StartupConfiguration $configuration = null)
     {
-        return $this->providers;
-    }
+        $this->configuration ??= new StartupConfiguration();
 
-    /**
-     * Add provider to application
-     *
-     * @param Provider $provider
-     * @return void
-     */
-    public function addProvider(Provider $provider): void
-    {
-        $this->providers->set(get_class($provider), $provider);
+        ServiceContainerFacade::setContainer($this->configuration->container ?? new ServiceContainer());
 
-        if (is_callable($provider)) {
-            $this->dependencyInjection->call($provider);
+        $this->container()->singleton(
+            $this->container()->make(ProvidersContainer::class),
+            IProviderContainer::class,
+        );
+
+        $this->container()->singleton(
+            $this->container()->make(StateContainer::class),
+            IStateContainer::class,
+        );
+
+        $this->container()->singleton($this);
+
+        if ($this->configuration->registerProvidersFromPackages) {
+            $this->registerNebulaPackages();
         }
     }
 
-    /**
-     * Run Nebula application
-     *
-     * @return void
-     * @throws Exceptions\AnotherInjectionExists
-     */
+    public function registerNebulaPackages(): void
+    {
+        $packages = InstalledVersions::getInstalledPackages();
+        $providers = $this->container()->get(IProviderContainer::class);
+
+        foreach ($packages as $package) {
+            $packagePath = InstalledVersions::getInstallPath($package);
+            $configFilePath = $packagePath . '/nebula.php';
+
+            if (
+                file_exists($configFilePath) &&
+                is_object($config = require $configFilePath) &&
+                $config instanceof INebulaConfig
+            ) {
+                if (!is_null($provider = $config->getProvider())) {
+                    $providers->addProvider($provider);
+                }
+            }
+        }
+    }
+
     public function run(): void
     {
-       $this->enrichment(); 
+        (new ApplicationInitEvent($this))->notify();
+
+        $this->registerProviders();
+
+        $this->callStates();
+
+        (new ApplicationCompletedEvent($this))->notify();
     }
 
-    /**
-     * @throws Exceptions\AnotherInjectionExists
-     */
-    protected function enrichment(): void
+    protected function registerProviders(): void
     {
-        $this->eInit->notify();
+        $providerContainer = $this->container()->get(IProviderContainer::class);
+        $providers = $providerContainer->getProviders();
 
-        /** @var IStateContainer $stateContainer */
-        $stateContainer = $this->dependencyInjection->get(IStateContainer::class);
-        $root = $stateContainer->getRoot();
-
-        foreach ($root as $state) {
-            $state->setPrevious($previous ?? null);
-            $this->callState($state);
-
-            $previous = $state;
+        foreach ($providers as $provider) {
+            $provider->register();
         }
-
-        $this->eCompleted->notify();
     }
 
-    /**
-     * @throws Exceptions\AnotherInjectionExists
-     */
-    protected function callState(State $state)
+    protected function callStates(): void
     {
-        /** @var IStateContainer $stateContainer */
-        $stateContainer = $this->dependencyInjection->get(IStateContainer::class);
-        $this->dependencyInjection->singleton($state, State::class);
+        $rootStates = $this->container()->get(IStateContainer::class)->getRoot();
+
+        foreach ($rootStates as $state) {
+            $this->callState($state);
+        }
+    }
+
+    protected function callState(State $state, ?State &$previous = null): void
+    {
+        $state->setPrevious($previous);
+        $this->container()->singleton($state, State::class);
 
         $state->notify();
 
-        $children = $stateContainer->getChildren($state::class);
+        $children = $this->container()->get(IStateContainer::class)->getChildren($state::class);
 
         foreach ($children as $child) {
-            $child->setPrevious($previous ?? null);
-            $this->callState($child);
-
-            $previous = $child;
+            $this->callState($child, $state);
         }
-    }
-
-    protected function initEvents(): void
-    {
-        $this->eInit = new ApplicationInitEvent();
-        $this->eCompleted = new ApplicationCompletedEvent();
     }
 }

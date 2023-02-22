@@ -1,6 +1,5 @@
 vendor
 composer.lock
-composer-dev.lock
 .phpunit.result.cache
 .vscode
 .idea

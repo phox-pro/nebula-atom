@@ -2,106 +2,98 @@
 
 namespace Tests\Unit;
 
-use Phox\Nebula\Atom\AtomProvider;
-use Phox\Nebula\Atom\Implementation\BasicEvent;
-use Phox\Nebula\Atom\Implementation\Exceptions\AnotherInjectionExists;
-use Phox\Nebula\Atom\Notion\Interfaces\IEvent;
-use Phox\Nebula\Atom\Notion\Interfaces\IProvidersContainer;
-use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
-use Phox\Nebula\Atom\TestCase;
 use Phox\Nebula\Atom\Implementation\Application;
-use Phox\Nebula\Atom\Notion\Abstracts\Provider;
-use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Structures\ObjectCollection;
-use PHPUnit\Framework\MockObject\MockObject;
+use Phox\Nebula\Atom\Implementation\AtomProvider;
+use Phox\Nebula\Atom\Implementation\Services\ServiceContainerFacade;
+use Phox\Nebula\Atom\Implementation\StartupConfiguration;
+use Phox\Nebula\Atom\Implementation\State\State;
+use Phox\Nebula\Atom\Notion\IProvider;
+use Phox\Nebula\Atom\Notion\IProviderContainer;
+use Phox\Nebula\Atom\Notion\IStateContainer;
+use Phox\Nebula\Atom\TestCase;
+use PHPUnit\Framework\MockObject\Exception;
 use stdClass;
 
-class ApplicationTest extends TestCase 
+class ApplicationTest extends TestCase
 {
-    public function testApplicationInDI(): void
+    public function testApplicationSingleton(): void
     {
-        $this->assertSame($this->nebula, $this->container()->get(Application::class));
-    }
+        $app = new Application();
 
-    public function testCanAddProviders(): void
-    {
-        $providersContainer = $this->container()->get(IProvidersContainer::class);
-        $providers = $providersContainer->getProviders();
-
-        $this->assertInstanceOf(ObjectCollection::class, $providers);
-        $this->assertEquals(1, $providers->count());
-        $this->assertInstanceOf(AtomProvider::class, $providers->first());
-
-        $provider = new class extends Provider {};
-        $providersContainer->addProvider($provider);
-
-        $this->assertTrue($providers->contains($provider));
-    }
-
-    public function testApplicationCallProvider(): void
-    {
-        /** @var Provider|MockObject $provider */
-        $provider = $this->getMockBuilder(Provider::class)->addMethods(['__invoke'])->getMock();
-        $provider->expects($this->once())->method('__invoke');
-
-        $this->container()->get(IProvidersContainer::class)->addProvider($provider);
+        $this->assertSame($app, ServiceContainerFacade::get(Application::class));
     }
 
     /**
-     * @throws AnotherInjectionExists
+     * @throws Exception
      */
-    public function testRegisterStatesFromProvider(): void
+    public function testApplicationRegisterProviders(): void
     {
-        $state = new class extends State {};
-        $state->listen(fn(IEvent $event) => $this->assertInstanceOf($state::class, $event));
+        $app = new Application();
+        $providersContainer = ServiceContainerFacade::get(IProviderContainer::class);
+        $providerMock = $this->createMock(IProvider::class);
 
-        $provider = new class($state) extends Provider {
-            public function __construct(private State $state) {}
+        $providerMock->expects($this->once())->method('register');
+        $providersContainer->addProvider($providerMock);
 
-            public function __invoke(IStateContainer $stateContainer): void
-            {
-                $stateContainer->add($this->state);
-            }
-        };
-
-        $this->container()->get(IProvidersContainer::class)->addProvider($provider);
-        $this->nebula->run();
+        $app->run();
     }
 
     /**
-     * @throws AnotherInjectionExists
+     * @throws Exception
      */
-    public function testApplicationInitEvent(): void
+    public function testApplicationRunStates(): void
     {
-        $mock = $this->getMockBuilder(stdClass::class)
-            ->addMethods(['callMe'])
+        $app = new Application();
+        $statesContainer = ServiceContainerFacade::get(IStateContainer::class);
+        $stateMock = $this->createMock(State::class);
+
+        $stateMock->expects($this->once())->method('notify');
+        $statesContainer->add($stateMock);
+
+        $app->run();
+    }
+
+    public function testApplicationRegisterProvider(): void
+    {
+        $app = new Application();
+
+        $providers = ServiceContainerFacade::get(IProviderContainer::class)->getProviders();
+
+        $this->assertCount(1, $providers);
+        $this->assertContainsOnlyInstancesOf(AtomProvider::class, $providers);
+    }
+
+    public function testApplicationSkipRegisterProviders(): void
+    {
+        $app = new Application(new StartupConfiguration(
+            registerProvidersFromPackages: false,
+        ));
+
+        $providers = ServiceContainerFacade::get(IProviderContainer::class)->getProviders();
+
+        $this->assertCount(0, $providers);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testStateFallbackCalled(): void
+    {
+        $app = new Application();
+
+        $parent = $this->createMock(State::class);
+        $child = $this->getMockBuilder(State::class)
+            ->setMockClassName($parent::class . '_child')
             ->getMock();
-        $mock->expects($this->once())->method('callMe');
-
-        $this->nebula->eInit->listen([$mock, 'callMe']);
-
-        $this->nebula->run();
-    }
-
-    /**
-     * @throws AnotherInjectionExists
-     */
-    public function testApplicationEventsAsParam(): void
-    {
         $mock = $this->getMockBuilder(stdClass::class)
-            ->addMethods(['callMe'])
+            ->addMethods(['fallback'])
             ->getMock();
-        $mock->expects($this->exactly(2))->method('callMe');
 
-        $initListener = fn(Application $application, IEvent $event) => $this->assertInstanceOf(BasicEvent::class, $event);
-        $completedListener = fn(IEvent $event) => $this->assertInstanceOf(BasicEvent::class, $event);
+        $mock->expects($this->once())->method('fallback');
 
-        $this->nebula->eInit->listen([$mock, 'callMe']);
-        $this->nebula->eCompleted->listen([$mock, 'callMe']);
+        $states = ServiceContainerFacade::get(IStateContainer::class);
+        $states->addAfter($child, $parent::class, [$mock, 'fallback']);
 
-        $this->nebula->eInit->listen($initListener);
-        $this->nebula->eCompleted->listen($completedListener);
-
-        $this->nebula->run();
+        $app->run();
     }
 }

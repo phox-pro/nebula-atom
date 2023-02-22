@@ -2,101 +2,108 @@
 
 namespace Phox\Nebula\Atom\Implementation;
 
-use Phox\Nebula\Atom\AtomProvider;
-use Phox\Nebula\Atom\Notion\Abstracts\State;
-use Phox\Nebula\Atom\Notion\Interfaces\IDependencyInjection;
-use Phox\Nebula\Atom\Notion\Interfaces\IEventManager;
-use Phox\Nebula\Atom\Notion\Interfaces\IProvidersContainer;
-use Phox\Nebula\Atom\Notion\Interfaces\IStateContainer;
+use Composer\InstalledVersions;
+use Phox\Nebula\Atom\Implementation\Events\ApplicationCompletedEvent;
+use Phox\Nebula\Atom\Implementation\Events\ApplicationInitEvent;
+use Phox\Nebula\Atom\Implementation\Provider\ProvidersContainer;
+use Phox\Nebula\Atom\Implementation\Services\ServiceContainer;
+use Phox\Nebula\Atom\Implementation\Services\ServiceContainerAccess;
+use Phox\Nebula\Atom\Implementation\Services\ServiceContainerFacade;
+use Phox\Nebula\Atom\Implementation\State\State;
+use Phox\Nebula\Atom\Implementation\State\StateContainer;
+use Phox\Nebula\Atom\Notion\INebulaConfig;
+use Phox\Nebula\Atom\Notion\IProviderContainer;
+use Phox\Nebula\Atom\Notion\IStateContainer;
 
-class Application 
+class Application
 {
-    protected IDependencyInjection $dependencyInjection;
+    use ServiceContainerAccess;
 
-    // Events
-    public BasicEvent $eInit;
-    public BasicEvent $eCompleted;
+    public function __construct(protected ?StartupConfiguration $configuration = null)
+    {
+        $this->configuration ??= new StartupConfiguration();
 
-    /**
-     * @throws Exceptions\AnotherInjectionExists
-     */
-    public function __construct()
-	{
-        $this->initDIContainer();
+        ServiceContainerFacade::setContainer($this->configuration->container ?? new ServiceContainer());
 
-        $providers = $this->dependencyInjection->make(ProvidersContainer::class);
-        $providers->addProvider(new AtomProvider());
+        $this->container()->singleton(
+            $this->container()->make(ProvidersContainer::class),
+            IProviderContainer::class,
+        );
 
-        $this->dependencyInjection->singleton($providers, IProvidersContainer::class);
+        $this->container()->singleton(
+            $this->container()->make(StateContainer::class),
+            IStateContainer::class,
+        );
+
+        $this->container()->singleton($this);
+
+        if ($this->configuration->registerProvidersFromPackages) {
+            $this->registerNebulaPackages();
+        }
     }
 
-    /**
-     * Run Nebula application
-     *
-     * @return void
-     * @throws Exceptions\AnotherInjectionExists
-     */
+    public function registerNebulaPackages(): void
+    {
+        $packages = InstalledVersions::getInstalledPackages();
+        $providers = $this->container()->get(IProviderContainer::class);
+
+        foreach ($packages as $package) {
+            $packagePath = InstalledVersions::getInstallPath($package);
+            $configFilePath = $packagePath . '/nebula.php';
+
+            if (
+                file_exists($configFilePath) &&
+                is_object($config = require $configFilePath) &&
+                $config instanceof INebulaConfig
+            ) {
+                if (!is_null($provider = $config->getProvider())) {
+                    $providers->addProvider($provider);
+                }
+            }
+        }
+    }
+
     public function run(): void
     {
-       $this->enrichment(); 
+        (new ApplicationInitEvent($this))->notify();
+
+        $this->registerProviders();
+
+        $this->callStates();
+
+        (new ApplicationCompletedEvent($this))->notify();
     }
 
-    public function getDIContainer(): IDependencyInjection
+    protected function registerProviders(): void
     {
-        return $this->dependencyInjection->get(IDependencyInjection::class);
-    }
+        $providerContainer = $this->container()->get(IProviderContainer::class);
+        $providers = $providerContainer->getProviders();
 
-    /**
-     * @throws Exceptions\AnotherInjectionExists
-     */
-    protected function enrichment(): void
-    {
-        $eventManager = $this->getDIContainer()->get(IEventManager::class);
-        $eventManager->notify($this->eInit);
-        $dependencyInjection = $this->dependencyInjection->get(IDependencyInjection::class);
-
-        $stateContainer = $dependencyInjection->get(IStateContainer::class);
-        $root = $stateContainer->getRoot();
-
-        foreach ($root as $state) {
-            $state->setPrevious($previous ?? null);
-            $this->callState($state);
-
-            $previous = $state;
+        foreach ($providers as $provider) {
+            $provider->register();
         }
-
-        $eventManager->notify($this->eCompleted);
     }
 
-    /**
-     * @throws Exceptions\AnotherInjectionExists
-     */
-    protected function callState(State $state): void
+    protected function callStates(): void
     {
-        $dependencyInjection = $this->getDIContainer();
-        $eventManager = $dependencyInjection->get(IEventManager::class);
+        $rootStates = $this->container()->get(IStateContainer::class)->getRoot();
 
-        $stateContainer = $dependencyInjection->get(IStateContainer::class);
-        $dependencyInjection->singleton($state, State::class);
+        foreach ($rootStates as $state) {
+            $this->callState($state);
+        }
+    }
 
-        $eventManager->notify($state);
+    protected function callState(State $state, ?State &$previous = null): void
+    {
+        $state->setPrevious($previous);
+        $this->container()->singleton($state, State::class);
 
-        $children = $stateContainer->getChildren($state::class);
+        $state->notify();
+
+        $children = $this->container()->get(IStateContainer::class)->getChildren($state::class);
 
         foreach ($children as $child) {
-            $child->setPrevious($previous ?? null);
-            $this->callState($child);
-
-            $previous = $child;
+            $this->callState($child, $state);
         }
-    }
-
-    /**
-     * @throws Exceptions\AnotherInjectionExists
-     */
-    protected function initDIContainer(): void
-    {
-        $this->dependencyInjection = new ServiceContainer();
-        $this->dependencyInjection->singleton($this);
     }
 }

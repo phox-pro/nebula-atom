@@ -2,20 +2,13 @@
 
 namespace Phox\Nebula\Atom\Implementation\Events;
 
-use Phox\Nebula\Atom\Notion\Abstracts\Event;
-use Phox\Nebula\Atom\Notion\Abstracts\State;
+use Phox\Nebula\Atom\Implementation\Event\Event;
+use Phox\Nebula\Atom\Implementation\State\State;
 
 class StateRegisteredEvent extends Event
 {
-    private ?State $state;
-
-    public function getState(): ?State
+    public function __construct(public readonly State $state)
     {
-        return $this->state;
-    }
-
-    public function setState(?State $state): void
-    {
-        $this->state = $state;
+        //
     }
 }

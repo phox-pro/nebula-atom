@@ -1,23 +1,23 @@
 {
-    "name": "phox-pro/nebula-atom",
-    "description": "Core library for Nebula framework",
-    "type": "library",
-    "autoload": {
-        "psr-4": {
-            "Phox\\Nebula\\Atom\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Tests\\": "Tests/"
-        }
-    },
-    "require": {
-        "php": "^8.1",
-        "phox-pro/structures": "dev-develop"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^9.5",
-        "phpstan/phpstan": "^1.2"
+  "name": "phox-pro/nebula-atom",
+  "description": "Core library for Nebula framework",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Phox\\Nebula\\Atom\\": "src/"
     }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^8.2",
+    "phox-pro/structures": "^0.1"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.0",
+    "phpstan/phpstan": "^1.9"
+  }
 }

@@ -1,8 +1,9 @@
-version: '3'
-
+version: "3"
 services:
-  lib:
-    image: phoxpro/lib
+  php-cli:
+    working_dir: /app
     tty: true
+    build:
+      dockerfile: Dockerfile
     volumes:
-      - './:/home/lib/'
+      - ./:/app

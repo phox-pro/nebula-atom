@@ -19,6 +19,8 @@ class Application
 {
     use ServiceContainerAccess;
 
+    protected const NEBULA_CONFIG_FILE_NAME = 'nebula.php';
+
     public function __construct(protected ?StartupConfiguration $configuration = null)
     {
         $this->configuration ??= new StartupConfiguration();
@@ -45,21 +47,26 @@ class Application
     public function registerNebulaPackages(): void
     {
         $packages = InstalledVersions::getInstalledPackages();
-        $providers = $this->container()->get(IProviderContainer::class);
 
         foreach ($packages as $package) {
             $packagePath = InstalledVersions::getInstallPath($package);
-            $configFilePath = $packagePath . '/nebula.php';
+            $configFilePath = $packagePath . DIRECTORY_SEPARATOR . static::NEBULA_CONFIG_FILE_NAME;
 
             if (
                 file_exists($configFilePath) &&
                 is_object($config = require $configFilePath) &&
                 $config instanceof INebulaConfig
             ) {
-                if (!is_null($provider = $config->getProvider())) {
-                    $providers->addProvider($provider);
-                }
+                $this->registerByConfig($config);
             }
+        }
+    }
+
+    public function registerByConfig(INebulaConfig $config): void
+    {
+        if (!is_null($provider = $config->getProvider())) {
+            $this->container()->get(IProviderContainer::class)
+                ->addProvider($provider);
         }
     }
 

@@ -1,0 +1,25 @@
+name: Default action
+
+on:
+  push:
+    branches: [ "master", "develop" ]
+  pull_request:
+    branches: [ "master", "develop" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build container
+        run: docker-compose up -d --build
+
+      - name: Composer install
+        run: docker-compose exec -it php-cli composer install
+
+      - name: Run tests
+        run: docker-compose exec -it php-cli ./vendor/bin/phpunit
+
+      - name: Run PHPStan
+        run: docker-compose exec -it php-cli ./vendor/bin/phpstan

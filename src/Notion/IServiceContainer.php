@@ -11,14 +11,14 @@ interface IServiceContainer
     public function transient(string $service, ?string $dependency = null): void;
 
     /**
-     * @template T
+     * @template T of object
      * @param class-string<T> $service
      * @return T
      */
     public function make(string $service): object;
 
     /**
-     * @template T
+     * @template T of object
      * @param class-string<T> $service
      * @return T|null
      */

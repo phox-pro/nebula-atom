@@ -7,8 +7,10 @@ use Phox\Nebula\Atom\Implementation\AtomProvider;
 use Phox\Nebula\Atom\Implementation\Services\ServiceContainerFacade;
 use Phox\Nebula\Atom\Implementation\StartupConfiguration;
 use Phox\Nebula\Atom\Implementation\State\State;
+use Phox\Nebula\Atom\Notion\INebulaConfig;
 use Phox\Nebula\Atom\Notion\IProvider;
 use Phox\Nebula\Atom\Notion\IProviderContainer;
+use Phox\Nebula\Atom\Notion\IServiceContainer;
 use Phox\Nebula\Atom\Notion\IStateContainer;
 use Phox\Nebula\Atom\TestCase;
 use PHPUnit\Framework\MockObject\Exception;
@@ -21,6 +23,7 @@ class ApplicationTest extends TestCase
         $app = new Application();
 
         $this->assertSame($app, ServiceContainerFacade::get(Application::class));
+        $this->assertIsSingleton(Application::class);
     }
 
     /**
@@ -29,6 +32,7 @@ class ApplicationTest extends TestCase
     public function testApplicationRegisterProviders(): void
     {
         $app = new Application();
+
         $providersContainer = ServiceContainerFacade::get(IProviderContainer::class);
         $providerMock = $this->createMock(IProvider::class);
 
@@ -53,7 +57,7 @@ class ApplicationTest extends TestCase
         $app->run();
     }
 
-    public function testApplicationRegisterProvider(): void
+    public function testApplicationRegisterProviderFromPackages(): void
     {
         $app = new Application();
 
@@ -95,5 +99,38 @@ class ApplicationTest extends TestCase
         $states->addAfter($child, $parent::class, [$mock, 'fallback']);
 
         $app->run();
+    }
+
+    public function testExtensionsRegisterByConfig(): void
+    {
+        $app = new Application(new StartupConfiguration(
+            registerProvidersFromPackages: false,
+        ));
+
+        $providerContainer = $this->container()->get(IProviderContainer::class);
+
+        $this->assertEmpty($providerContainer->getProviders());
+
+        $app->registerByConfig(new class implements INebulaConfig {
+            public function getProvider(): ?IProvider
+            {
+                return new AtomProvider();
+            }
+        });
+
+        $this->assertCount(1, $providerContainer->getProviders());
+    }
+
+    public function testCustomContainerByConfig(): void
+    {
+        $containerMock = $this->getMockBuilder(IServiceContainer::class)->getMock();
+
+        $app = new Application(new StartupConfiguration(
+            registerProvidersFromPackages: false,
+            container: $containerMock,
+        ));
+
+        $this->assertInstanceOf($containerMock::class, ServiceContainerFacade::instance());
+        $this->assertIsSingleton($containerMock::class);
     }
 }

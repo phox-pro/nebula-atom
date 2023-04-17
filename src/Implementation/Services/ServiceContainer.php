@@ -16,7 +16,7 @@ class ServiceContainer implements IServiceContainer
 
     public function singleton(object|string $service, ?string $dependency = null): void
     {
-        $dependency ??= is_object($service) ? get_class($service) : $service;
+        $dependency ??= is_object($service) ? $service::class : $service;
         $this->singletons[$dependency] = $service;
     }
 
@@ -44,11 +44,7 @@ class ServiceContainer implements IServiceContainer
             return $this->singletons[$service];
         }
 
-        return $this->make(
-            array_key_exists($service, $this->transients)
-                ? $this->transients[$service]
-                : $service
-        );
+        return $this->make($this->transients[$service] ?? $service);
     }
 
     public function reset(): void

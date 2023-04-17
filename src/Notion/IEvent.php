@@ -2,19 +2,18 @@
 
 namespace Phox\Nebula\Atom\Notion;
 
-use Phox\Structures\Interfaces\IArray;
 use Phox\Structures\Interfaces\IEnumerableArray;
 
 interface IEvent
 {
     /**
-     * @param callable(IEvent): void $listener
+     * @param callable(static): void $listener
      * @return void
      */
     public static function listen(callable $listener): void;
 
     /**
-     * @return IEnumerableArray<callable(IEvent): void>
+     * @return IEnumerableArray<callable(static): void>
      */
     public static function getListeners(): IEnumerableArray;
 

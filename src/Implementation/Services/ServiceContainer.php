@@ -6,7 +6,10 @@ use Phox\Nebula\Atom\Notion\IServiceContainer;
 
 class ServiceContainer implements IServiceContainer
 {
+    /** @var array<string|object> */
     protected array $singletons = [];
+
+    /** @var array<string> */
     protected array $transients = [];
 
     public function __construct()

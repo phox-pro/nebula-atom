@@ -39,7 +39,7 @@ class ServiceContainerFacade
     }
 
     /**
-     * @template T
+     * @template T of object
      * @param class-string<T> $service
      * @return T
      */
@@ -49,7 +49,7 @@ class ServiceContainerFacade
     }
 
     /**
-     * @template T
+     * @template T of object
      * @param class-string<T> $service
      * @return T|null
      */

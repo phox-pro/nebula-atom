@@ -21,3 +21,5 @@ jobs:
       - name: Run tests
         run: docker-compose exec -it php-cli ./vendor/bin/phpunit
 
+      - name: Run PHPStan
+        run: docker-compose exec -it php-cli ./vendor/bin/phpstan

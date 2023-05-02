@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use Phox\Nebula\Atom\Implementation\Services\ServiceContainer;
 use Phox\Nebula\Atom\Implementation\Services\ServiceContainerFacade;
+use Phox\Nebula\Atom\Notion\IServiceContainer;
 use Phox\Nebula\Atom\TestCase;
 use PHPUnit\Framework\MockObject\Exception;
 use stdClass;
@@ -62,5 +63,53 @@ class ServiceContainerTest extends TestCase
         ServiceContainerFacade::setContainer(new ServiceContainer());
 
         $this->assertNotSame($container, ServiceContainerFacade::instance());
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testCallableAsService(): void
+    {
+        $container = new ServiceContainer();
+        $transientCallCount = 4;
+
+        $testSingletonRegisterMock = $this->getMockBuilder(stdClass::class)
+            ->addMethods(['test'])
+            ->getMock();
+        $testTransientRegisterMock = $this->getMockBuilder(stdClass::class)
+            ->setMockClassName(stdClass::class . 'transient')
+            ->addMethods(['test'])
+            ->getMock();
+
+        $testSingletonRegisterMock->expects($this->once())->method('test')->willReturn($this);
+        $testTransientRegisterMock->expects($this->exactly($transientCallCount))
+            ->method('test')
+            ->willReturn($this);
+
+        $container->singleton([$testSingletonRegisterMock, 'test'], $testSingletonRegisterMock::class);
+        $container->transient([$testTransientRegisterMock, 'test'], $testTransientRegisterMock::class);
+
+        for ($i = 0; $i < $transientCallCount; $i++) {
+            $container->get($testTransientRegisterMock::class);
+            $container->get($testSingletonRegisterMock::class);
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function testServiceContainerCallableReturnExpectedValue(): void
+    {
+        $container = new ServiceContainer();
+        $containerMock = $this->createMock(IServiceContainer::class);
+
+        $container->singleton(
+            fn(IServiceContainer $container): IServiceContainer => $containerMock,
+            IServiceContainer::class
+        );
+
+        $result = $container->get(IServiceContainer::class);
+
+        $this->assertSame($containerMock, $result);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Phox\Nebula\Atom\Implementation\Services;
 
+use LogicException;
 use Phox\Nebula\Atom\Notion\IServiceContainer;
 
 class ServiceContainer implements IServiceContainer
@@ -17,21 +18,29 @@ class ServiceContainer implements IServiceContainer
         $this->reset();
     }
 
-    public function singleton(object|string $service, ?string $dependency = null): void
+    public function singleton(object|string|callable $service, ?string $dependency = null): void
     {
+        if (is_callable($service) && is_null($dependency)) {
+            throw new LogicException();
+        }
+
         $dependency ??= is_object($service) ? $service::class : $service;
         $this->singletons[$dependency] = $service;
     }
 
-    public function transient(string $service, ?string $dependency = null): void
+    public function transient(string|callable $service, ?string $dependency = null): void
     {
         $dependency ??= $service;
 
         $this->transients[$dependency] = $service;
     }
 
-    public function make(string $service): object
+    public function make(string|callable $service): object
     {
+        if (is_callable($service)) {
+            return $service($this);
+        }
+
         $realService = $this->singletons[$service] ?? $this->transients[$service] ?? $service;
 
         return new $realService();
@@ -40,7 +49,7 @@ class ServiceContainer implements IServiceContainer
     public function get(string $service): ?object
     {
         if (array_key_exists($service, $this->singletons)) {
-            if (!is_object($this->singletons[$service])) {
+            if (!is_object($this->singletons[$service]) || is_callable($this->singletons[$service])) {
                 $this->singletons[$service] = $this->make($this->singletons[$service]);
             }
 

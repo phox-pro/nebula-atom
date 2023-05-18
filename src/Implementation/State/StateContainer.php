@@ -34,7 +34,7 @@ class StateContainer implements IStateContainer
     {
         $this->root = new Collection(type(State::class));
         $this->children = new AssociativeCollection(type(IEnumerableArray::class));
-        $this->fallbacks = new AssociativeCollection(Type::CALLABLE);
+        $this->fallbacks = new AssociativeCollection(Type::Callable);
 
         $this->setFallbacksCleaner();
         $this->setFallbacksCaller();

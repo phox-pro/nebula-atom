@@ -21,14 +21,14 @@ abstract class Event implements IEvent
 
         return static::$listeners->has(static::class)
             ? static::$listeners->get(static::class)
-            : new EnumerableArray(Type::CALLABLE);
+            : new EnumerableArray(Type::Callable);
     }
 
     public static function listen(callable $listener): void
     {
         static::initListeners();
         static::$listeners->has(static::class)
-            ?: static::$listeners->set(static::class, new EnumerableArray(Type::CALLABLE));
+            ?: static::$listeners->set(static::class, new EnumerableArray(Type::Callable));
 
         static::$listeners->get(static::class)->add($listener);
     }

@@ -3,6 +3,7 @@
 namespace Phox\Nebula\Atom;
 
 use Phox\Nebula\Atom\Implementation\Event\Event;
+use Phox\Nebula\Atom\Implementation\Services\ServiceContainerAccess;
 use Phox\Nebula\Atom\Implementation\Services\ServiceContainerFacade;
 use Phox\Nebula\Atom\Implementation\State\State;
 use Phox\Nebula\Atom\Notion\IEvent;
@@ -15,17 +16,14 @@ use stdClass;
 
 class TestCase extends ParentTestCase
 {
+    use ServiceContainerAccess;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         ServiceContainerFacade::instance()?->reset();
         Event::clearListeners();
-    }
-
-    protected function container(): IServiceContainer
-    {
-        return ServiceContainerFacade::instance();
     }
 
     /**
